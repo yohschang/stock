@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+yfinance
+pydantic
+pandas
+aiofiles
+sqlalchemy
+psycopg2-binary
