@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Candlestick Drawing</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        background: #0b1221;
+        color: #e6edf3;
+      }
+      header {
+        padding: 16px 20px;
+        font-size: 20px;
+        font-weight: 700;
+        border-bottom: 1px solid #13203a;
+        background: radial-gradient(circle at 20% 20%, rgba(45, 212, 191, 0.15), transparent 35%),
+          radial-gradient(circle at 80% 10%, rgba(99, 102, 241, 0.15), transparent 35%),
+          #0b1221;
+      }
+      main {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 16px;
+      }
+      section.card {
+        background: #0f172a;
+        border: 1px solid #13203a;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+      }
+      h2, h3 {
+        margin: 0 0 12px;
+        font-weight: 700;
+      }
+      p {
+        margin: 0 0 10px;
+        color: #9fb3c8;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        margin: 10px 0 6px;
+        color: #d6e1f5;
+      }
+      input[type="number"] {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #1f2a44;
+        background: #0b1428;
+        color: #e6edf3;
+      }
+      button {
+        appearance: none;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-weight: 600;
+        color: #0b1221;
+        background: linear-gradient(120deg, #22d3ee, #6366f1);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
+        transition: transform 120ms ease, box-shadow 160ms ease;
+      }
+      button.secondary {
+        background: #12233f;
+        color: #e6edf3;
+        box-shadow: none;
+        border: 1px solid #1f2a44;
+      }
+      button.danger {
+        background: linear-gradient(120deg, #ef4444, #f97316);
+        color: #fff5f5;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 36px rgba(34, 211, 238, 0.35);
+      }
+      button + button {
+        margin-left: 8px;
+      }
+      #chart {
+        width: 100%;
+        height: 640px;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .muted {
+        color: #9fb3c8;
+        font-size: 13px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #cbd5ff;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Plotly Candlestick with Editable Trend Lines</header>
+    <main>
+      <section class="card">
+        <h3>Playground controls</h3>
+        <p class="muted">Generate a synthetic price series and draw, edit, or delete lines anywhere on the chart.</p>
+        <label for="points">Number of candles</label>
+        <input id="points" type="number" min="20" max="240" value="120" />
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="regen">Regenerate data</button>
+          <button id="fit" class="secondary">Zoom to candles</button>
+        </div>
+        <div style="margin-top:20px;"><span class="pill" id="mode-pill">Pan / inspect</span></div>
+        <p class="muted" style="margin-top:10px;">Select an action below then use the chart's toolbar handles. Drag the line's endpoints to edit; use erase mode or the clear button to delete.</p>
+        <div class="toolbar">
+          <button id="draw">Draw line</button>
+          <button id="edit" class="secondary">Edit lines</button>
+          <button id="erase" class="secondary">Erase single line</button>
+          <button id="clear" class="danger">Clear all lines</button>
+        </div>
+        <p id="status" class="muted">Idle</p>
+      </section>
+      <section class="card" style="min-width:0;">
+        <div id="chart"></div>
+        <p class="muted" id="line-count" style="margin-top:10px;">0 custom lines on the canvas.</p>
+        <p class="muted" style="margin-top:8px;">Lines can be drawn anywhere, even outside the candle area. Use the eraser button or the trash icon in the toolbar to remove individual lines.</p>
+      </section>
+    </main>
+    <script>
+      const chartEl = document.getElementById("chart");
+      const statusEl = document.getElementById("status");
+      const lineCountEl = document.getElementById("line-count");
+      const pillEl = document.getElementById("mode-pill");
+      const pointsEl = document.getElementById("points");
+
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
+
+      function setModePill(text) {
+        pillEl.textContent = text;
+      }
+
+      function withDatePadding(dates, days) {
+        const start = new Date(dates[0]);
+        start.setDate(start.getDate() - days);
+        const end = new Date(dates.at(-1));
+        end.setDate(end.getDate() + days);
+        return [start, end];
+      }
+
+      function generateSeries(count) {
+        const now = new Date();
+        const dates = [];
+        for (let i = count - 1; i >= 0; i -= 1) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          dates.push(d);
+        }
+        let price = 100;
+        const o = [], h = [], l = [], c = [];
+        for (const day of dates) {
+          const change = (Math.random() - 0.45) * 2.5;
+          const open = price;
+          const close = price + change;
+          const high = Math.max(open, close) + Math.random() * 1.5;
+          const low = Math.min(open, close) - Math.random() * 1.5;
+          o.push(open.toFixed(2));
+          h.push(high.toFixed(2));
+          l.push(low.toFixed(2));
+          c.push(close.toFixed(2));
+          price = close;
+        }
+        const rangePadding = 12;
+        const yMin = Math.min(...l) - rangePadding;
+        const yMax = Math.max(...h) + rangePadding;
+        return { dates, o, h, l, c, yRange: [yMin, yMax] };
+      }
+
+      let series = generateSeries(parseInt(pointsEl.value, 10));
+
+      const layout = {
+        dragmode: "pan",
+        margin: { l: 60, r: 20, t: 16, b: 40 },
+        plot_bgcolor: "#0b1221",
+        paper_bgcolor: "#0b1221",
+        xaxis: {
+          range: withDatePadding(series.dates, 3),
+          showgrid: true,
+          gridcolor: "rgba(255,255,255,0.05)",
+          zeroline: false,
+        },
+        yaxis: {
+          range: series.yRange,
+          showgrid: true,
+          gridcolor: "rgba(255,255,255,0.05)",
+          zeroline: false,
+        },
+        newshape: {
+          line: { color: "#22d3ee", width: 2 },
+          opacity: 0.95,
+          layer: "above",
+        },
+        shapes: [],
+        edits: {
+          shapePosition: true,
+          shapeDimensions: true,
+        },
+        legend: { orientation: "h" },
+      };
+
+      const config = {
+        responsive: true,
+        displaylogo: false,
+        modeBarButtonsToAdd: ["drawline", "eraseshape"],
+        toImageButtonOptions: { format: "png" },
+        editable: true,
+        edits: {
+          shapePosition: true,
+          shapeDimensions: true,
+        },
+      };
+
+      function renderPlot() {
+        const candle = {
+          type: "candlestick",
+          x: series.dates,
+          open: series.o,
+          high: series.h,
+          low: series.l,
+          close: series.c,
+          decreasing: { line: { color: "#f87171" }, fillcolor: "#b91c1c" },
+          increasing: { line: { color: "#34d399" }, fillcolor: "#065f46" },
+          name: "Synthetic",
+        };
+        Plotly.newPlot(chartEl, [candle], layout, config).then(() => {
+          if (!chartEl._lineListenerAttached) {
+            chartEl.on("plotly_relayout", () => updateLineCount());
+            chartEl._lineListenerAttached = true;
+          }
+          updateLineCount();
+        });
+      }
+
+      function updateLineCount() {
+        const shapeCount = (chartEl.layout?.shapes || []).length;
+        lineCountEl.textContent = `${shapeCount} custom line${shapeCount === 1 ? "" : "s"} on the canvas.`;
+      }
+
+      function setDragMode(mode, label) {
+        Plotly.relayout(chartEl, { dragmode: mode });
+        setModePill(label);
+      }
+
+      document.getElementById("draw").addEventListener("click", () => {
+        setStatus("Drawing mode: click and drag on the chart to place a line.");
+        setDragMode("drawline", "Draw line");
+      });
+
+      document.getElementById("edit").addEventListener("click", () => {
+        setStatus("Edit mode: drag line endpoints or move the full line.");
+        setDragMode("pan", "Edit lines");
+      });
+
+      document.getElementById("erase").addEventListener("click", () => {
+        setStatus("Eraser mode: click any line to remove it.");
+        setDragMode("eraseshape", "Erase line");
+      });
+
+      document.getElementById("clear").addEventListener("click", () => {
+        Plotly.relayout(chartEl, { shapes: [] }).then(() => updateLineCount());
+        setStatus("All lines cleared.");
+        setDragMode("pan", "Pan / inspect");
+      });
+
+      document.getElementById("fit").addEventListener("click", () => {
+        Plotly.relayout(chartEl, {
+          "xaxis.autorange": true,
+          "yaxis.autorange": true,
+        });
+        setStatus("Viewport reset to candle data.");
+        setModePill("Pan / inspect");
+      });
+
+      document.getElementById("regen").addEventListener("click", () => {
+        const count = Math.max(20, Math.min(240, parseInt(pointsEl.value || "120", 10)));
+        series = generateSeries(count);
+        layout.xaxis.range = withDatePadding(series.dates, 3);
+        layout.yaxis.range = series.yRange;
+        layout.shapes = [];
+        renderPlot();
+        setStatus(`Generated ${count} candles. Drag lines wherever you like, even outside the price range.`);
+        setModePill("Pan / inspect");
+      });
+
+      renderPlot();
+      setStatus("Loaded synthetic price data. Use the buttons above to draw, edit, or erase lines.");
+    </script>
+  </body>
+</html>
