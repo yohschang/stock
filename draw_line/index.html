@@ -1,517 +1,809 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Interactive Candlestick Drawing</title>
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-    <style>
-      :root {
-        color-scheme: dark;
-      }
-      body {
-        margin: 0;
-        font-family: "Inter", system-ui, -apple-system, sans-serif;
-        background: #0b1221;
-        color: #e6edf3;
-      }
-      header {
-        padding: 16px 20px;
-        font-size: 20px;
-        font-weight: 700;
-        border-bottom: 1px solid #13203a;
-        background: radial-gradient(circle at 20% 20%, rgba(45, 212, 191, 0.15), transparent 35%),
-          radial-gradient(circle at 80% 10%, rgba(99, 102, 241, 0.15), transparent 35%),
-          #0b1221;
-      }
-      main {
-        padding: 20px;
-        display: grid;
-        grid-template-columns: 280px 1fr;
-        gap: 16px;
-      }
-      section.card {
-        background: #0f172a;
-        border: 1px solid #13203a;
-        border-radius: 10px;
-        padding: 16px;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
-      }
-      h2, h3 {
-        margin: 0 0 12px;
-        font-weight: 700;
-      }
-      p {
-        margin: 0 0 10px;
-        color: #9fb3c8;
-      }
-      label {
-        display: block;
-        font-size: 13px;
-        margin: 10px 0 6px;
-        color: #d6e1f5;
-      }
-      input[type="number"] {
-        width: 100%;
-        padding: 8px 10px;
-        border-radius: 8px;
-        border: 1px solid #1f2a44;
-        background: #0b1428;
-        color: #e6edf3;
-      }
-      button {
-        appearance: none;
-        border: none;
-        cursor: pointer;
-        border-radius: 8px;
-        padding: 10px 12px;
-        font-weight: 600;
-        color: #0b1221;
-        background: linear-gradient(120deg, #22d3ee, #6366f1);
-        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
-        transition: transform 120ms ease, box-shadow 160ms ease;
-      }
-      button.secondary {
-        background: #12233f;
-        color: #e6edf3;
-        box-shadow: none;
-        border: 1px solid #1f2a44;
-      }
-      button.danger {
-        background: linear-gradient(120deg, #ef4444, #f97316);
-        color: #fff5f5;
-      }
-      button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 14px 36px rgba(34, 211, 238, 0.35);
-      }
-      button + button {
-        margin-left: 8px;
-      }
-      #chart {
-        width: 100%;
-        height: 640px;
-      }
-      .toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-      .muted {
-        color: #9fb3c8;
-        font-size: 13px;
-      }
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: rgba(99, 102, 241, 0.12);
-        border: 1px solid rgba(99, 102, 241, 0.3);
-        color: #cbd5ff;
-        font-size: 12px;
-      }
-    </style>
-  </head>
-  <body>
-    <header>Plotly Candlestick with Editable Trend Lines</header>
-    <main>
-      <section class="card">
-        <h3>Data & line controls</h3>
-        <p class="muted">Pull live OHLCV data, then draw, edit, and persist custom lines per ticker.</p>
-        <label for="ticker">Ticker</label>
-        <input id="ticker" type="text" value="AAPL" style="text-transform:uppercase;" />
-        <label for="range">Range</label>
-        <select id="range" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
-          <option value="1mo">1 month</option>
-          <option value="3mo">3 months</option>
-          <option value="6mo">6 months</option>
-          <option value="1y">1 year</option>
-        </select>
-        <label for="interval">Interval</label>
-        <select id="interval" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
-          <option value="1d">1 day</option>
-          <option value="1wk">1 week</option>
-          <option value="1mo">1 month</option>
-        </select>
-        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button id="load">Load from Yahoo Finance</button>
-          <button id="fit" class="secondary">Zoom to candles</button>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button id="regen">Use synthetic data</button>
-        </div>
-        <div style="margin-top:20px;"><span class="pill" id="mode-pill">Pan / inspect</span></div>
-        <p class="muted" style="margin-top:10px;">Select an action below then use the chart's toolbar handles. Drag the line's endpoints to edit; use erase mode or the clear button to delete.</p>
-        <div class="toolbar">
-          <button id="draw">Draw line</button>
-          <button id="edit" class="secondary">Edit lines</button>
-          <button id="erase" class="secondary">Erase single line</button>
-          <button id="clear" class="danger">Clear all lines</button>
-        </div>
-        <label for="extend">Auto-extend</label>
-        <select id="extend" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
-          <option value="none">No extension</option>
-          <option value="forward">Extend forward</option>
-          <option value="backward">Extend backward</option>
-          <option value="both">Extend both directions</option>
-        </select>
-        <p id="status" class="muted" style="margin-top:12px;">Idle</p>
-      </section>
-      <section class="card" style="min-width:0;">
-        <div id="chart"></div>
-        <p class="muted" id="line-count" style="margin-top:10px;">0 custom lines on the canvas.</p>
-        <p class="muted" style="margin-top:8px;">Lines can be drawn anywhere, even outside the candle area. Use the eraser button or the trash icon in the toolbar to remove individual lines.</p>
-      </section>
-    </main>
-    <script>
-      const chartEl = document.getElementById("chart");
-      const statusEl = document.getElementById("status");
-      const lineCountEl = document.getElementById("line-count");
-      const pillEl = document.getElementById("mode-pill");
-      const tickerEl = document.getElementById("ticker");
-      const rangeEl = document.getElementById("range");
-      const intervalEl = document.getElementById("interval");
-      const extendEl = document.getElementById("extend");
 
-      function setStatus(text) {
-        statusEl.textContent = text;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Candlestick Drawing</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
 
-      function setModePill(text) {
-        pillEl.textContent = text;
-      }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: #0b1221;
+      color: #e6edf3;
+    }
 
-      function withDatePadding(dates, days) {
-        const start = new Date(dates[0]);
-        start.setDate(start.getDate() - days);
-        const end = new Date(dates.at(-1));
-        end.setDate(end.getDate() + days);
-        return [start, end];
-      }
+    header {
+      padding: 16px 20px;
+      font-size: 20px;
+      font-weight: 700;
+      border-bottom: 1px solid #13203a;
+      background: radial-gradient(circle at 20% 20%, rgba(45, 212, 191, 0.15), transparent 35%),
+        radial-gradient(circle at 80% 10%, rgba(99, 102, 241, 0.15), transparent 35%),
+        #0b1221;
+    }
 
-      const storageKey = "draw_line_shapes_v1";
-      let currentTicker = tickerEl.value.toUpperCase();
-      let series = null;
-      let storedShapes = [];
-      let internalUpdate = false;
+    main {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+    }
 
-      const layout = {
-        dragmode: "pan",
-        margin: { l: 60, r: 20, t: 16, b: 40 },
-        plot_bgcolor: "#0b1221",
-        paper_bgcolor: "#0b1221",
-        xaxis: {
-          range: withDatePadding([new Date()], 3),
-          showgrid: true,
-          gridcolor: "rgba(255,255,255,0.05)",
-          zeroline: false,
-        },
-        yaxis: {
-          range: [0, 1],
-          showgrid: true,
-          gridcolor: "rgba(255,255,255,0.05)",
-          zeroline: false,
-        },
-        newshape: {
-          line: { color: "#22d3ee", width: 2 },
-          opacity: 0.95,
-          layer: "above",
-        },
-        shapes: [],
-        edits: {
-          shapePosition: true,
-          shapeDimensions: true,
-          shapeDelete: true,
-        },
-        legend: { orientation: "h" },
-      };
+    section.card {
+      background: #0f172a;
+      border: 1px solid #13203a;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+    }
 
-      const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToAdd: ["drawline", "eraseshape"],
-        toImageButtonOptions: { format: "png" },
-        editable: true,
-        edits: {
-          shapePosition: true,
-          shapeDimensions: true,
-          shapeDelete: true,
-        },
-      };
+    h2,
+    h3 {
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
 
-      const linePalette = [
-        "#22d3ee",
-        "#c084fc",
-        "#f472b6",
-        "#f97316",
-        "#34d399",
-        "#f59e0b",
-        "#60a5fa",
-      ];
+    p {
+      margin: 0 0 10px;
+      color: #9fb3c8;
+    }
 
-      function randomLineColor() {
-        const idx = Math.floor(Math.random() * linePalette.length);
-        return linePalette[idx];
-      }
+    label {
+      display: block;
+      font-size: 13px;
+      margin: 10px 0 6px;
+      color: #d6e1f5;
+    }
 
-      async function fetchYahooSeries(ticker, range, interval) {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
-          ticker
-        )}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(
-          range
-        )}&includePrePost=false&corsDomain=finance.yahoo.com`;
-        const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`Request failed: ${res.status}`);
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #1f2a44;
+      background: #0b1428;
+      color: #e6edf3;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-weight: 600;
+      color: #0b1221;
+      background: linear-gradient(120deg, #22d3ee, #6366f1);
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
+      transition: transform 120ms ease, box-shadow 160ms ease;
+    }
+
+    button.secondary {
+      background: #12233f;
+      color: #e6edf3;
+      box-shadow: none;
+      border: 1px solid #1f2a44;
+    }
+
+    button.danger {
+      background: linear-gradient(120deg, #ef4444, #f97316);
+      color: #fff5f5;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 36px rgba(34, 211, 238, 0.35);
+    }
+
+    button+button {
+      margin-left: 8px;
+    }
+
+    #chart {
+      width: 100%;
+      height: 640px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .muted {
+      color: #9fb3c8;
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #cbd5ff;
+      font-size: 12px;
+    }
+
+    .tabs {
+      display: flex;
+      background: #0b1428;
+      border: 1px solid #1f2a44;
+      border-radius: 8px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #9fb3c8;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: none;
+    }
+
+    .tab:hover {
+      color: #e6edf3;
+      background: rgba(255, 255, 255, 0.05);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .tab.active {
+      background: #1f2a44;
+      color: #22d3ee;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <header>Plotly Candlestick with Editable Trend Lines</header>
+  <main>
+    <section class="card">
+      <h3>Data & line controls</h3>
+      <p class="muted">Pull live OHLCV data, then draw, edit, and persist custom lines per ticker.</p>
+      <label for="ticker">Ticker</label>
+      <input id="ticker" type="text" value="AAPL" style="text-transform:uppercase;" />
+      <label for="range">Range</label>
+      <select id="range"
+        style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
+        <option value="1mo">1 month</option>
+        <option value="3mo">3 months</option>
+        <option value="6mo">6 months</option>
+        <option value="1y">1 year</option>
+      </select>
+      <label>Interval</label>
+      <div id="interval-tabs" class="tabs">
+        <button class="tab active" data-value="1d">1D</button>
+        <button class="tab" data-value="1wk">1W</button>
+        <button class="tab" data-value="1mo">1M</button>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="load">Load from Yahoo Finance</button>
+        <button id="fit" class="secondary">Zoom to candles</button>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="regen">Use synthetic data</button>
+      </div>
+      <div style="margin-top:20px;"><span class="pill" id="mode-pill">Pan / inspect</span></div>
+      <p class="muted" style="margin-top:10px;">Select an action below then use the chart's toolbar handles. Drag the
+        line's endpoints to edit; use erase mode or the clear button to delete.</p>
+      <div class="toolbar">
+        <button id="draw">Draw line</button>
+        <button id="edit" class="secondary">Edit lines</button>
+        <button id="delete-selected" class="secondary" disabled>Delete Selected</button>
+        <button id="erase" class="secondary">Erase single line</button>
+        <button id="clear" class="danger">Clear all lines</button>
+      </div>
+      <label for="extend">Auto-extend</label>
+      <select id="extend"
+        style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
+        <option value="none">No extension</option>
+        <option value="forward">Extend forward</option>
+        <option value="backward">Extend backward</option>
+        <option value="both">Extend both directions</option>
+      </select>
+      <p id="status" class="muted" style="margin-top:12px;">Idle</p>
+    </section>
+    <section class="card" style="min-width:0;">
+      <div id="chart"></div>
+      <p class="muted" id="line-count" style="margin-top:10px;">0 custom lines on the canvas.</p>
+      <div id="line-list" style="margin-top:16px; display:flex; flex-direction:column; gap:8px;"></div>
+      <p class="muted" style="margin-top:8px;">Lines can be drawn anywhere, even outside the candle area. Use the eraser
+        button or the trash icon in the toolbar to remove individual lines.</p>
+    </section>
+  </main>
+  <script>
+    const chartEl = document.getElementById("chart");
+    const statusEl = document.getElementById("status");
+    const lineCountEl = document.getElementById("line-count");
+    const pillEl = document.getElementById("mode-pill");
+    const tickerEl = document.getElementById("ticker");
+    const rangeEl = document.getElementById("range");
+    const intervalTabs = document.querySelectorAll("#interval-tabs .tab");
+    const extendEl = document.getElementById("extend");
+
+    let currentInterval = "1d";
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function setModePill(text) {
+      pillEl.textContent = text;
+    }
+
+    function withDatePadding(dates, days) {
+      const start = new Date(dates[0]);
+      start.setDate(start.getDate() - days);
+      const end = new Date(dates.at(-1));
+      end.setDate(end.getDate() + days);
+      return [start, end];
+    }
+
+    function findNearestDate(targetDate, dates) {
+      if (!dates || dates.length === 0) return targetDate;
+      const targetTs = new Date(targetDate).getTime();
+      let closest = dates[0];
+      let minDiff = Math.abs(targetTs - new Date(dates[0]).getTime());
+
+      for (let i = 1; i < dates.length; i++) {
+        const diff = Math.abs(targetTs - new Date(dates[i]).getTime());
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = dates[i];
         }
-        const data = await res.json();
-        const result = data?.chart?.result?.[0];
-        if (!result || !result.timestamp || !result.indicators?.quote?.[0]) {
-          throw new Error("Unexpected response format from Yahoo Finance.");
-        }
-        const { open, high, low, close } = result.indicators.quote[0];
-        const timestamps = result.timestamp.map((t) => new Date(t * 1000));
-        const validIndices = close.map((v, idx) => ({ v, idx })).filter(({ v }) => Number.isFinite(v));
-        const filteredDates = validIndices.map(({ idx }) => timestamps[idx]);
-        const o = validIndices.map(({ idx }) => open[idx]);
-        const h = validIndices.map(({ idx }) => high[idx]);
-        const l = validIndices.map(({ idx }) => low[idx]);
-        const c = validIndices.map(({ idx }) => close[idx]);
-        if (!filteredDates.length) {
-          throw new Error("No usable OHLC points returned.");
-        }
-        const padding = 12;
-        const yMin = Math.min(...l) - padding;
-        const yMax = Math.max(...h) + padding;
-        return { dates: filteredDates, o, h, l, c, yRange: [yMin, yMax] };
+      }
+      return closest;
+    }
+
+    const storageKey = "draw_line_shapes_v1";
+    let currentTicker = tickerEl.value.toUpperCase();
+    let series = null;
+    let storedShapes = [];
+    let internalUpdate = false;
+    let selectedShapeIdx = null;
+
+    const layout = {
+      dragmode: "pan",
+      margin: { l: 60, r: 20, t: 16, b: 40 },
+      plot_bgcolor: "#0b1221",
+      paper_bgcolor: "#0b1221",
+      xaxis: {
+        range: withDatePadding([new Date()], 3),
+        showgrid: true,
+        gridcolor: "rgba(255,255,255,0.05)",
+        zeroline: false,
+      },
+      yaxis: {
+        range: [0, 1],
+        showgrid: true,
+        gridcolor: "rgba(255,255,255,0.05)",
+        zeroline: false,
+      },
+      newshape: {
+        line: { color: "#22d3ee", width: 2 },
+        opacity: 0.95,
+        layer: "above",
+      },
+      shapes: [],
+      edits: {
+        shapePosition: true,
+        shapeDimensions: true,
+        shapeDelete: true,
+      },
+      legend: { orientation: "h" },
+    };
+
+    const config = {
+      responsive: true,
+      displaylogo: false,
+      modeBarButtonsToAdd: ["drawline", "eraseshape"],
+      toImageButtonOptions: { format: "png" },
+      editable: true,
+      edits: {
+        shapePosition: true,
+        shapeDimensions: true,
+        shapeDelete: true,
+      },
+    };
+
+    const linePalette = [
+      "#22d3ee",
+      "#c084fc",
+      "#f472b6",
+      "#f97316",
+      "#34d399",
+      "#f59e0b",
+      "#60a5fa",
+    ];
+
+    function randomLineColor() {
+      const idx = Math.floor(Math.random() * linePalette.length);
+      return linePalette[idx];
+    }
+
+    async function fetchYahooSeries(ticker, range, interval) {
+      // Use local server API
+      const url = `/api/data?ticker=${encodeURIComponent(ticker)}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+      }
+      const data = await res.json();
+
+      if (!data.dates || data.dates.length === 0) {
+        throw new Error("No usable OHLC points returned.");
       }
 
-      function generateSeries(count = 120) {
-        const now = new Date();
-        const dates = [];
-        for (let i = count - 1; i >= 0; i -= 1) {
-          const d = new Date(now);
-          d.setDate(now.getDate() - i);
-          dates.push(d);
-        }
-        let price = 100;
-        const o = [], h = [], l = [], c = [];
-        for (const day of dates) {
-          const change = (Math.random() - 0.45) * 2.5;
-          const open = price;
-          const close = price + change;
-          const high = Math.max(open, close) + Math.random() * 1.5;
-          const low = Math.min(open, close) - Math.random() * 1.5;
-          o.push(open.toFixed(2));
-          h.push(high.toFixed(2));
-          l.push(low.toFixed(2));
-          c.push(close.toFixed(2));
-          price = close;
-        }
-        const rangePadding = 12;
-        const yMin = Math.min(...l) - rangePadding;
-        const yMax = Math.max(...h) + rangePadding;
-        return { dates, o, h, l, c, yRange: [yMin, yMax] };
-      }
+      const dates = data.dates.map(ts => new Date(ts));
+      const o = data.open;
+      const h = data.high;
+      const l = data.low;
+      const c = data.close;
 
-      function saveShapesForTicker(ticker, shapes) {
-        const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
-        payload[ticker] = shapes;
-        localStorage.setItem(storageKey, JSON.stringify(payload));
-      }
+      const padding = (Math.max(...h) - Math.min(...l)) * 0.05 || 1;
+      const yMin = Math.min(...l) - padding;
+      const yMax = Math.max(...h) + padding;
+      return { dates, o, h, l, c, yRange: [yMin, yMax] };
+    }
 
-      function loadShapesForTicker(ticker) {
-        const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
-        return payload[ticker] || [];
+    function generateSeries(count = 120) {
+      const now = new Date();
+      const dates = [];
+      for (let i = count - 1; i >= 0; i -= 1) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        dates.push(d);
       }
+      let price = 100;
+      const o = [], h = [], l = [], c = [];
+      for (const day of dates) {
+        const change = (Math.random() - 0.45) * 2.5;
+        const open = price;
+        const close = price + change;
+        const high = Math.max(open, close) + Math.random() * 1.5;
+        const low = Math.min(open, close) - Math.random() * 1.5;
+        o.push(open.toFixed(2));
+        h.push(high.toFixed(2));
+        l.push(low.toFixed(2));
+        c.push(close.toFixed(2));
+        price = close;
+      }
+      const rangePadding = 12;
+      const yMin = Math.min(...l) - rangePadding;
+      const yMax = Math.max(...h) + rangePadding;
+      return { dates, o, h, l, c, yRange: [yMin, yMax] };
+    }
 
-      function extendCoords(shape, range) {
-        const extend = shape.extend || "none";
-        if (extend === "none") return shape;
-        const [xStart, xEnd] = range.map((d) => new Date(d).getTime());
-        const x0 = new Date(shape.x0).getTime();
-        const x1 = new Date(shape.x1).getTime();
-        const slope = (shape.y1 - shape.y0) / (x1 - x0 || 1);
-        const forward = () => ({
-          x1: new Date(xEnd),
-          y1: shape.y0 + slope * (xEnd - x0),
-        });
-        const backward = () => ({
-          x0: new Date(xStart),
-          y0: shape.y1 - slope * (x1 - xStart),
-        });
-        if (extend === "forward") {
-          const f = forward();
-          return { ...shape, ...f };
-        }
-        if (extend === "backward") {
-          const b = backward();
-          return { ...shape, ...b };
-        }
+    function saveShapesForTicker(ticker, shapes) {
+      const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      payload[ticker] = shapes;
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+    }
+
+    function loadShapesForTicker(ticker) {
+      const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      return payload[ticker] || [];
+    }
+
+    function extendCoords(shape, range) {
+      const extend = shape.extend || "none";
+      if (extend === "none") return shape;
+      const [xStart, xEnd] = range.map((d) => new Date(d).getTime());
+      const x0 = new Date(shape.x0).getTime();
+      const x1 = new Date(shape.x1).getTime();
+      const slope = (shape.y1 - shape.y0) / (x1 - x0 || 1);
+      const forward = () => ({
+        x1: new Date(xEnd),
+        y1: shape.y0 + slope * (xEnd - x0),
+      });
+      const backward = () => ({
+        x0: new Date(xStart),
+        y0: shape.y1 - slope * (x1 - xStart),
+      });
+      if (extend === "forward") {
         const f = forward();
+        return { ...shape, ...f };
+      }
+      if (extend === "backward") {
         const b = backward();
-        return { ...shape, ...f, ...b };
+        return { ...shape, ...b };
       }
+      const f = forward();
+      const b = backward();
+      return { ...shape, ...f, ...b };
+    }
 
-      function applyShapes() {
-        const extended = storedShapes.map((s) => {
-          const base = {
-            type: "line",
-            x0: s.x0,
-            x1: s.x1,
-            y0: s.y0,
-            y1: s.y1,
-            line: { color: s.color || layout.newshape.line.color || "#22d3ee", width: 2 },
-            opacity: 0.95,
-            layer: "above",
-            meta: { extend: s.extend || extendEl.value },
-            extend: s.extend || extendEl.value,
-          };
-          return extendCoords(base, layout.xaxis.range);
-        });
-        internalUpdate = true;
-        Plotly.relayout(chartEl, { shapes: extended }).then(() => {
-          internalUpdate = false;
-          updateLineCount();
-        });
-      }
-
-      function syncStoredShapes() {
-        const shapes = chartEl.layout?.shapes || [];
-        const previousCount = storedShapes.length;
-        storedShapes = shapes.map((s, idx) => ({
+    function applyShapes() {
+      const extended = storedShapes.map((s, idx) => {
+        const isSelected = idx === selectedShapeIdx;
+        const base = {
+          type: "line",
           x0: s.x0,
           x1: s.x1,
           y0: s.y0,
           y1: s.y1,
-          extend: s.meta?.extend || extendEl.value,
-          color: s.line?.color || (idx >= previousCount ? randomLineColor() : layout.newshape.line.color || randomLineColor()),
-        }));
-        saveShapesForTicker(currentTicker, storedShapes);
-        updateLineCount();
-      }
-
-      function renderPlot() {
-        const candle = {
-          type: "candlestick",
-          x: series.dates,
-          open: series.o,
-          high: series.h,
-          low: series.l,
-          close: series.c,
-          decreasing: { line: { color: "#f87171" }, fillcolor: "#b91c1c" },
-          increasing: { line: { color: "#34d399" }, fillcolor: "#065f46" },
-          name: currentTicker,
+          line: {
+            color: isSelected ? "#ffffff" : (s.color || layout.newshape.line.color || "#22d3ee"),
+            width: isSelected ? 4 : 2,
+            dash: isSelected ? "dot" : "solid"
+          },
+          opacity: 0.95,
+          layer: "above",
+          meta: { extend: s.extend || extendEl.value },
+          extend: s.extend || extendEl.value,
         };
-        Plotly.newPlot(chartEl, [candle], layout, config).then(() => {
-          if (!chartEl._lineListenerAttached) {
-            chartEl.on("plotly_relayout", (eventData) => {
-              if (internalUpdate) return;
-              const shapeChanged = Object.keys(eventData || {}).some((k) => k.startsWith("shapes"));
-              if (shapeChanged) {
-                syncStoredShapes();
-                applyShapes();
+        return extendCoords(base, layout.xaxis.range);
+      });
+      internalUpdate = true;
+      Plotly.relayout(chartEl, { shapes: extended }).then(() => {
+        internalUpdate = false;
+        updateLineCount();
+      });
+    }
+
+    function syncStoredShapes() {
+      const shapes = chartEl.layout?.shapes || [];
+      const previousCount = storedShapes.length;
+      storedShapes = shapes.map((s, idx) => ({
+        x0: s.x0,
+        x1: s.x1,
+        y0: s.y0,
+        y1: s.y1,
+        extend: s.meta?.extend || extendEl.value,
+        color: s.line?.color || (idx >= previousCount ? randomLineColor() : layout.newshape.line.color || randomLineColor()),
+      }));
+      saveShapesForTicker(currentTicker, storedShapes);
+      updateLineCount();
+    }
+
+    function renderPlot() {
+      const candle = {
+        type: "candlestick",
+        x: series.dates,
+        open: series.o,
+        high: series.h,
+        low: series.l,
+        close: series.c,
+        decreasing: { line: { color: "#f87171" }, fillcolor: "#b91c1c" },
+        increasing: { line: { color: "#34d399" }, fillcolor: "#065f46" },
+        name: currentTicker,
+      };
+      Plotly.newPlot(chartEl, [candle], layout, config).then(() => {
+        if (!chartEl._lineListenerAttached) {
+          chartEl.on("plotly_relayout", (eventData) => {
+            if (internalUpdate) return;
+
+            // Check if a shape was added or modified
+            const shapeKeys = Object.keys(eventData).filter(k => k.includes("shapes"));
+            if (shapeKeys.length > 0) {
+              // We need to find which shape was changed or added.
+              // Since Plotly doesn't give us the index easily in all cases, we can just re-read all shapes
+              // and snap them if they are new or moved.
+              // However, to avoid snapping everything repeatedly, we can just snap the current layout shapes.
+
+              const currentShapes = chartEl.layout.shapes || [];
+
+              // If a new shape is drawn, it might not be in storedShapes yet.
+              // If an existing shape is moved, we update it.
+
+              const newStoredShapes = currentShapes.map((s, idx) => {
+                // Find nearest dates for x0 and x1
+                // Note: s.x0 and s.x1 might be date strings or timestamps
+
+                // Only snap if we have series data
+                let x0 = s.x0;
+                let x1 = s.x1;
+
+                if (series && series.dates) {
+                  // Find closest date in series.dates
+                  // We need to convert s.x0/s.x1 to date objects if they aren't
+                  const d0 = new Date(x0);
+                  const d1 = new Date(x1);
+
+                  // Snap
+                  const snap0 = findNearestDate(d0, series.dates);
+                  const snap1 = findNearestDate(d1, series.dates);
+
+                  x0 = snap0.toISOString(); // Store as ISO string for consistency
+                  x1 = snap1.toISOString();
+                }
+
+                return {
+                  x0: x0,
+                  x1: x1,
+                  y0: s.y0,
+                  y1: s.y1,
+                  extend: s.meta?.extend || extendEl.value,
+                  color: s.line?.color || (idx >= storedShapes.length ? randomLineColor() : storedShapes[idx].color || randomLineColor()),
+                };
+              });
+
+              storedShapes = newStoredShapes;
+              saveShapesForTicker(currentTicker, storedShapes);
+
+              // Re-apply shapes to force them to snap position visually
+              // We need to do this in a way that doesn't cause an infinite loop
+              // applyShapes() sets internalUpdate = true, so it should be safe.
+              applyShapes();
+            }
+            updateLineCount();
+          });
+          chartEl._lineListenerAttached = true;
+        }
+        applyShapes();
+
+        // Add click listener for selection
+        chartEl.on('plotly_click', (data) => {
+          if (!data || !data.points) return;
+          // We can't easily detect click on shape via points, so we use coordinate distance
+          // But plotly_click event gives us the clicked coordinates
+          const clickX = new Date(data.points[0].xaxis.d2c(data.event.offsetX - layout.margin.l)).getTime(); // Approximate
+          // Better: use the event coordinates and map to data
+          // Actually, data.points[0].x is the x-value of the point clicked (candle).
+          // We need the exact mouse position.
+
+          const xaxis = chartEl._fullLayout.xaxis;
+          const yaxis = chartEl._fullLayout.yaxis;
+          const xClick = xaxis.p2d(data.event.x - layout.margin.l);
+          const yClick = yaxis.p2d(data.event.y - layout.margin.t);
+
+          // Find closest shape
+          let closestIdx = -1;
+          let minDist = Infinity;
+
+          // Convert xClick to timestamp if it's a date string
+          const xClickTs = new Date(xClick).getTime();
+
+          storedShapes.forEach((s, idx) => {
+            const x0 = new Date(s.x0).getTime();
+            const x1 = new Date(s.x1).getTime();
+            const y0 = s.y0;
+            const y1 = s.y1;
+
+            // Distance from point to line segment
+            // Normalize x and y to screen pixels for fair distance? 
+            // Or just use data units? Data units are mixed (time vs price).
+            // Better to project everything to pixels.
+
+            const x0px = xaxis.d2p(s.x0);
+            const x1px = xaxis.d2p(s.x1);
+            const y0px = yaxis.d2p(s.y0);
+            const y1px = yaxis.d2p(s.y1);
+            const clickXpx = xaxis.d2p(xClick);
+            const clickYpx = yaxis.d2p(yClick);
+
+            // Point to line segment distance in pixels
+            const A = clickXpx - x0px;
+            const B = clickYpx - y0px;
+            const C = x1px - x0px;
+            const D = y1px - y0px;
+
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            if (lenSq !== 0) param = dot / lenSq;
+
+            let xx, yy;
+
+            if (param < 0) {
+              xx = x0px;
+              yy = y0px;
+            } else if (param > 1) {
+              xx = x1px;
+              yy = y1px;
+            } else {
+              xx = x0px + param * C;
+              yy = y0px + param * D;
+            }
+
+            const dx = clickXpx - xx;
+            const dy = clickYpx - yy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 10) { // 10px threshold
+              if (dist < minDist) {
+                minDist = dist;
+                closestIdx = idx;
               }
-              updateLineCount();
-            });
-            chartEl._lineListenerAttached = true;
+            }
+          });
+
+          if (closestIdx !== -1) {
+            selectedShapeIdx = closestIdx;
+            document.getElementById('delete-selected').disabled = false;
+            setStatus(`Selected line ${closestIdx + 1}.`);
+          } else {
+            selectedShapeIdx = null;
+            document.getElementById('delete-selected').disabled = true;
+            setStatus("Deselected lines.");
           }
           applyShapes();
         });
-      }
-
-      function updateLineCount() {
-        const shapeCount = (chartEl.layout?.shapes || []).length;
-        lineCountEl.textContent = `${shapeCount} custom line${shapeCount === 1 ? "" : "s"} on the canvas.`;
-      }
-
-      function setDragMode(mode, label) {
-        Plotly.relayout(chartEl, { dragmode: mode });
-        setModePill(label);
-      }
-
-      document.getElementById("draw").addEventListener("click", () => {
-        const color = randomLineColor();
-        setStatus(`Drawing mode: new lines will use color ${color}. Click and drag on the chart to place a line.`);
-        Plotly.relayout(chartEl, { "newshape.line.color": color });
-        setDragMode("drawline", "Draw line");
       });
+    }
 
-      document.getElementById("edit").addEventListener("click", () => {
-        setStatus("Edit mode: drag line endpoints or move the full line.");
-        setDragMode("pan", "Edit lines");
+    function renderLineList() {
+      const listEl = document.getElementById("line-list");
+      listEl.innerHTML = "";
+
+      storedShapes.forEach((s, idx) => {
+        const item = document.createElement("div");
+        item.style.cssText = "display:flex; align-items:center; justify-content:space-between; background:#0f172a; padding:8px 12px; border-radius:6px; border:1px solid #1f2a44;";
+
+        const info = document.createElement("span");
+        info.style.fontSize = "13px";
+        info.style.color = "#cbd5ff";
+        const d1 = new Date(s.x0).toLocaleDateString();
+        const d2 = new Date(s.x1).toLocaleDateString();
+        info.textContent = `Line ${idx + 1}: ${d1} → ${d2}`;
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.className = "danger";
+        delBtn.style.cssText = "padding:4px 8px; font-size:12px; margin-left:12px;";
+        delBtn.onclick = () => {
+          storedShapes.splice(idx, 1);
+          saveShapesForTicker(currentTicker, storedShapes);
+          applyShapes();
+          renderLineList();
+        };
+
+        item.appendChild(info);
+        item.appendChild(delBtn);
+        listEl.appendChild(item);
       });
+    }
 
-      document.getElementById("erase").addEventListener("click", () => {
-        setStatus("Eraser mode: click any line to remove it.");
-        setDragMode("eraseshape", "Erase line");
-      });
+    function updateLineCount() {
+      const shapeCount = (chartEl.layout?.shapes || []).length;
+      lineCountEl.textContent = `${shapeCount} custom line${shapeCount === 1 ? "" : "s"} on the canvas.`;
+      renderLineList();
+    }
 
-      document.getElementById("clear").addEventListener("click", () => {
-        storedShapes = [];
+    function setDragMode(mode, label) {
+      Plotly.relayout(chartEl, { dragmode: mode });
+      setModePill(label);
+    }
+
+    document.getElementById("draw").addEventListener("click", () => {
+      const color = randomLineColor();
+      setStatus(`Drawing mode: new lines will use color ${color}. Click and drag on the chart to place a line.`);
+      Plotly.relayout(chartEl, { "newshape.line.color": color });
+      setDragMode("drawline", "Draw line");
+    });
+
+    document.getElementById("edit").addEventListener("click", () => {
+      setStatus("Edit mode: drag line endpoints or move the full line.");
+      setDragMode("pan", "Edit lines");
+    });
+
+    document.getElementById("erase").addEventListener("click", () => {
+      setStatus("Eraser mode: click any line to remove it.");
+      setDragMode("eraseshape", "Erase line");
+    });
+
+    document.getElementById("clear").addEventListener("click", () => {
+      storedShapes = [];
+      selectedShapeIdx = null;
+      document.getElementById('delete-selected').disabled = true;
+      saveShapesForTicker(currentTicker, storedShapes);
+      Plotly.relayout(chartEl, { shapes: [] }).then(() => updateLineCount());
+      setStatus("All lines cleared.");
+      setDragMode("pan", "Pan / inspect");
+    });
+
+    document.getElementById("delete-selected").addEventListener("click", () => {
+      if (selectedShapeIdx !== null && storedShapes[selectedShapeIdx]) {
+        storedShapes.splice(selectedShapeIdx, 1);
+        selectedShapeIdx = null;
+        document.getElementById('delete-selected').disabled = true;
         saveShapesForTicker(currentTicker, storedShapes);
-        Plotly.relayout(chartEl, { shapes: [] }).then(() => updateLineCount());
-        setStatus("All lines cleared.");
-        setDragMode("pan", "Pan / inspect");
-      });
+        applyShapes();
+        updateLineCount();
+        setStatus("Selected line deleted.");
+      }
+    });
 
-      document.getElementById("fit").addEventListener("click", () => {
-        Plotly.relayout(chartEl, {
-          "xaxis.autorange": true,
-          "yaxis.autorange": true,
-        });
-        setStatus("Viewport reset to candle data.");
+    document.getElementById("fit").addEventListener("click", () => {
+      Plotly.relayout(chartEl, {
+        "xaxis.autorange": true,
+        "yaxis.autorange": true,
+      });
+      setStatus("Viewport reset to candle data.");
+      setModePill("Pan / inspect");
+    });
+
+    document.getElementById("regen").addEventListener("click", () => {
+      series = generateSeries(120);
+      layout.xaxis.range = withDatePadding(series.dates, 3);
+      layout.yaxis.range = series.yRange;
+      storedShapes = [];
+      saveShapesForTicker(currentTicker, storedShapes);
+      renderPlot();
+      setStatus(`Generated synthetic candles. Drag lines wherever you like, even outside the price range.`);
+      setModePill("Pan / inspect");
+    });
+
+    async function loadTickerData() {
+      const ticker = tickerEl.value.trim().toUpperCase();
+      if (!ticker) return;
+
+      const isSameTicker = currentTicker === ticker;
+      currentTicker = ticker;
+
+      setStatus(`Loading ${ticker} from Yahoo Finance...`);
+      try {
+        // Preserve view range if ticker is same
+        const currentXRange = (isSameTicker && chartEl.layout && chartEl.layout.xaxis) ? chartEl.layout.xaxis.range : null;
+
+        series = await fetchYahooSeries(ticker, rangeEl.value, currentInterval);
+
+        if (currentXRange) {
+          // Check if current range overlaps with new data
+          // If so, keep it. If not (e.g. completely out of bounds), reset.
+          // For simplicity, we'll try to keep it if it's valid.
+          layout.xaxis.range = currentXRange;
+        } else {
+          layout.xaxis.range = withDatePadding(series.dates, 3);
+        }
+
+        layout.yaxis.range = series.yRange;
+        storedShapes = loadShapesForTicker(currentTicker);
+        renderPlot();
+        setStatus(`Loaded ${ticker} with ${series.dates.length} candles. Stored lines restored.`);
         setModePill("Pan / inspect");
-      });
-
-      document.getElementById("regen").addEventListener("click", () => {
+      } catch (err) {
+        console.error(err);
         series = generateSeries(120);
         layout.xaxis.range = withDatePadding(series.dates, 3);
         layout.yaxis.range = series.yRange;
         storedShapes = [];
-        saveShapesForTicker(currentTicker, storedShapes);
         renderPlot();
-        setStatus(`Generated synthetic candles. Drag lines wherever you like, even outside the price range.`);
-        setModePill("Pan / inspect");
-      });
-
-      async function loadTickerData() {
-        const ticker = tickerEl.value.trim().toUpperCase();
-        if (!ticker) return;
-        currentTicker = ticker;
-        setStatus(`Loading ${ticker} from Yahoo Finance...`);
-        try {
-          series = await fetchYahooSeries(ticker, rangeEl.value, intervalEl.value);
-          layout.xaxis.range = withDatePadding(series.dates, 3);
-          layout.yaxis.range = series.yRange;
-          storedShapes = loadShapesForTicker(currentTicker);
-          renderPlot();
-          setStatus(`Loaded ${ticker} with ${series.dates.length} candles. Stored lines restored.`);
-          setModePill("Pan / inspect");
-        } catch (err) {
-          console.error(err);
-          series = generateSeries(120);
-          layout.xaxis.range = withDatePadding(series.dates, 3);
-          layout.yaxis.range = series.yRange;
-          storedShapes = [];
-          renderPlot();
-          setStatus(`Failed to load ${ticker}: ${err.message}. Showing synthetic data instead.`);
-        }
+        setStatus(`Failed to load ${ticker}: ${err.message}. Showing synthetic data instead.`);
       }
+    }
 
-      document.getElementById("load").addEventListener("click", loadTickerData);
-      intervalEl.addEventListener("change", loadTickerData);
+    document.getElementById("load").addEventListener("click", loadTickerData);
 
-      extendEl.addEventListener("change", () => {
-        storedShapes = storedShapes.map((s) => ({ ...s, extend: extendEl.value }));
-        applyShapes();
+    // Handle tab switching
+    intervalTabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        // Update active class
+        intervalTabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+
+        // Update current interval
+        currentInterval = tab.dataset.value;
+
+        // Reload data
+        loadTickerData();
       });
+    });
 
-      // initial bootstrap
-      loadTickerData();
-    </script>
-  </body>
+    extendEl.addEventListener("change", () => {
+      storedShapes = storedShapes.map((s) => ({ ...s, extend: extendEl.value }));
+      applyShapes();
+    });
+
+    // initial bootstrap
+    loadTickerData();
+  </script>
+</body>
+
 </html>
