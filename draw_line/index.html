@@ -119,13 +119,23 @@
     <header>Plotly Candlestick with Editable Trend Lines</header>
     <main>
       <section class="card">
-        <h3>Playground controls</h3>
-        <p class="muted">Generate a synthetic price series and draw, edit, or delete lines anywhere on the chart.</p>
-        <label for="points">Number of candles</label>
-        <input id="points" type="number" min="20" max="240" value="120" />
+        <h3>Data & line controls</h3>
+        <p class="muted">Pull live OHLCV data, then draw, edit, and persist custom lines per ticker.</p>
+        <label for="ticker">Ticker</label>
+        <input id="ticker" type="text" value="AAPL" style="text-transform:uppercase;" />
+        <label for="range">Range</label>
+        <select id="range" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
+          <option value="1mo">1 month</option>
+          <option value="3mo">3 months</option>
+          <option value="6mo">6 months</option>
+          <option value="1y">1 year</option>
+        </select>
         <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button id="regen">Regenerate data</button>
+          <button id="load">Load from Yahoo Finance</button>
           <button id="fit" class="secondary">Zoom to candles</button>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="regen">Use synthetic data</button>
         </div>
         <div style="margin-top:20px;"><span class="pill" id="mode-pill">Pan / inspect</span></div>
         <p class="muted" style="margin-top:10px;">Select an action below then use the chart's toolbar handles. Drag the line's endpoints to edit; use erase mode or the clear button to delete.</p>
@@ -135,7 +145,14 @@
           <button id="erase" class="secondary">Erase single line</button>
           <button id="clear" class="danger">Clear all lines</button>
         </div>
-        <p id="status" class="muted">Idle</p>
+        <label for="extend">Auto-extend</label>
+        <select id="extend" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
+          <option value="none">No extension</option>
+          <option value="forward">Extend forward</option>
+          <option value="backward">Extend backward</option>
+          <option value="both">Extend both directions</option>
+        </select>
+        <p id="status" class="muted" style="margin-top:12px;">Idle</p>
       </section>
       <section class="card" style="min-width:0;">
         <div id="chart"></div>
@@ -148,7 +165,9 @@
       const statusEl = document.getElementById("status");
       const lineCountEl = document.getElementById("line-count");
       const pillEl = document.getElementById("mode-pill");
-      const pointsEl = document.getElementById("points");
+      const tickerEl = document.getElementById("ticker");
+      const rangeEl = document.getElementById("range");
+      const extendEl = document.getElementById("extend");
 
       function setStatus(text) {
         statusEl.textContent = text;
@@ -166,35 +185,11 @@
         return [start, end];
       }
 
-      function generateSeries(count) {
-        const now = new Date();
-        const dates = [];
-        for (let i = count - 1; i >= 0; i -= 1) {
-          const d = new Date(now);
-          d.setDate(now.getDate() - i);
-          dates.push(d);
-        }
-        let price = 100;
-        const o = [], h = [], l = [], c = [];
-        for (const day of dates) {
-          const change = (Math.random() - 0.45) * 2.5;
-          const open = price;
-          const close = price + change;
-          const high = Math.max(open, close) + Math.random() * 1.5;
-          const low = Math.min(open, close) - Math.random() * 1.5;
-          o.push(open.toFixed(2));
-          h.push(high.toFixed(2));
-          l.push(low.toFixed(2));
-          c.push(close.toFixed(2));
-          price = close;
-        }
-        const rangePadding = 12;
-        const yMin = Math.min(...l) - rangePadding;
-        const yMax = Math.max(...h) + rangePadding;
-        return { dates, o, h, l, c, yRange: [yMin, yMax] };
-      }
-
-      let series = generateSeries(parseInt(pointsEl.value, 10));
+      const storageKey = "draw_line_shapes_v1";
+      let currentTicker = tickerEl.value.toUpperCase();
+      let series = null;
+      let storedShapes = [];
+      let internalUpdate = false;
 
       const layout = {
         dragmode: "pan",
@@ -202,13 +197,13 @@
         plot_bgcolor: "#0b1221",
         paper_bgcolor: "#0b1221",
         xaxis: {
-          range: withDatePadding(series.dates, 3),
+          range: withDatePadding([new Date()], 3),
           showgrid: true,
           gridcolor: "rgba(255,255,255,0.05)",
           zeroline: false,
         },
         yaxis: {
-          range: series.yRange,
+          range: [0, 1],
           showgrid: true,
           gridcolor: "rgba(255,255,255,0.05)",
           zeroline: false,
@@ -238,6 +233,138 @@
         },
       };
 
+      async function fetchYahooSeries(ticker, range) {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+          ticker
+        )}?interval=1d&range=${encodeURIComponent(range)}&includePrePost=false&corsDomain=finance.yahoo.com`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Request failed: ${res.status}`);
+        }
+        const data = await res.json();
+        const result = data?.chart?.result?.[0];
+        if (!result || !result.timestamp || !result.indicators?.quote?.[0]) {
+          throw new Error("Unexpected response format from Yahoo Finance.");
+        }
+        const { open, high, low, close } = result.indicators.quote[0];
+        const timestamps = result.timestamp.map((t) => new Date(t * 1000));
+        const validIndices = close.map((v, idx) => ({ v, idx })).filter(({ v }) => Number.isFinite(v));
+        const filteredDates = validIndices.map(({ idx }) => timestamps[idx]);
+        const o = validIndices.map(({ idx }) => open[idx]);
+        const h = validIndices.map(({ idx }) => high[idx]);
+        const l = validIndices.map(({ idx }) => low[idx]);
+        const c = validIndices.map(({ idx }) => close[idx]);
+        if (!filteredDates.length) {
+          throw new Error("No usable OHLC points returned.");
+        }
+        const padding = 12;
+        const yMin = Math.min(...l) - padding;
+        const yMax = Math.max(...h) + padding;
+        return { dates: filteredDates, o, h, l, c, yRange: [yMin, yMax] };
+      }
+
+      function generateSeries(count = 120) {
+        const now = new Date();
+        const dates = [];
+        for (let i = count - 1; i >= 0; i -= 1) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          dates.push(d);
+        }
+        let price = 100;
+        const o = [], h = [], l = [], c = [];
+        for (const day of dates) {
+          const change = (Math.random() - 0.45) * 2.5;
+          const open = price;
+          const close = price + change;
+          const high = Math.max(open, close) + Math.random() * 1.5;
+          const low = Math.min(open, close) - Math.random() * 1.5;
+          o.push(open.toFixed(2));
+          h.push(high.toFixed(2));
+          l.push(low.toFixed(2));
+          c.push(close.toFixed(2));
+          price = close;
+        }
+        const rangePadding = 12;
+        const yMin = Math.min(...l) - rangePadding;
+        const yMax = Math.max(...h) + rangePadding;
+        return { dates, o, h, l, c, yRange: [yMin, yMax] };
+      }
+
+      function saveShapesForTicker(ticker, shapes) {
+        const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        payload[ticker] = shapes;
+        localStorage.setItem(storageKey, JSON.stringify(payload));
+      }
+
+      function loadShapesForTicker(ticker) {
+        const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        return payload[ticker] || [];
+      }
+
+      function extendCoords(shape, range) {
+        const extend = shape.extend || "none";
+        if (extend === "none") return shape;
+        const [xStart, xEnd] = range.map((d) => new Date(d).getTime());
+        const x0 = new Date(shape.x0).getTime();
+        const x1 = new Date(shape.x1).getTime();
+        const slope = (shape.y1 - shape.y0) / (x1 - x0 || 1);
+        const forward = () => ({
+          x1: new Date(xEnd),
+          y1: shape.y0 + slope * (xEnd - x0),
+        });
+        const backward = () => ({
+          x0: new Date(xStart),
+          y0: shape.y1 - slope * (x1 - xStart),
+        });
+        if (extend === "forward") {
+          const f = forward();
+          return { ...shape, ...f };
+        }
+        if (extend === "backward") {
+          const b = backward();
+          return { ...shape, ...b };
+        }
+        const f = forward();
+        const b = backward();
+        return { ...shape, ...f, ...b };
+      }
+
+      function applyShapes() {
+        const extended = storedShapes.map((s) => {
+          const base = {
+            type: "line",
+            x0: s.x0,
+            x1: s.x1,
+            y0: s.y0,
+            y1: s.y1,
+            line: { color: "#22d3ee", width: 2 },
+            opacity: 0.95,
+            layer: "above",
+            meta: { extend: s.extend || "none" },
+          };
+          return extendCoords(base, layout.xaxis.range);
+        });
+        internalUpdate = true;
+        Plotly.relayout(chartEl, { shapes: extended }).then(() => {
+          internalUpdate = false;
+          updateLineCount();
+        });
+      }
+
+      function syncStoredShapes() {
+        const shapes = chartEl.layout?.shapes || [];
+        storedShapes = shapes.map((s) => ({
+          x0: s.x0,
+          x1: s.x1,
+          y0: s.y0,
+          y1: s.y1,
+          extend: s.meta?.extend || extendEl.value,
+        }));
+        saveShapesForTicker(currentTicker, storedShapes);
+        updateLineCount();
+      }
+
       function renderPlot() {
         const candle = {
           type: "candlestick",
@@ -248,14 +375,22 @@
           close: series.c,
           decreasing: { line: { color: "#f87171" }, fillcolor: "#b91c1c" },
           increasing: { line: { color: "#34d399" }, fillcolor: "#065f46" },
-          name: "Synthetic",
+          name: currentTicker,
         };
         Plotly.newPlot(chartEl, [candle], layout, config).then(() => {
           if (!chartEl._lineListenerAttached) {
-            chartEl.on("plotly_relayout", () => updateLineCount());
+            chartEl.on("plotly_relayout", (eventData) => {
+              if (internalUpdate) return;
+              const shapeChanged = Object.keys(eventData || {}).some((k) => k.startsWith("shapes"));
+              if (shapeChanged) {
+                syncStoredShapes();
+                applyShapes();
+              }
+              updateLineCount();
+            });
             chartEl._lineListenerAttached = true;
           }
-          updateLineCount();
+          applyShapes();
         });
       }
 
@@ -285,6 +420,8 @@
       });
 
       document.getElementById("clear").addEventListener("click", () => {
+        storedShapes = [];
+        saveShapesForTicker(currentTicker, storedShapes);
         Plotly.relayout(chartEl, { shapes: [] }).then(() => updateLineCount());
         setStatus("All lines cleared.");
         setDragMode("pan", "Pan / inspect");
@@ -300,18 +437,49 @@
       });
 
       document.getElementById("regen").addEventListener("click", () => {
-        const count = Math.max(20, Math.min(240, parseInt(pointsEl.value || "120", 10)));
-        series = generateSeries(count);
+        series = generateSeries(120);
         layout.xaxis.range = withDatePadding(series.dates, 3);
         layout.yaxis.range = series.yRange;
-        layout.shapes = [];
+        storedShapes = [];
+        saveShapesForTicker(currentTicker, storedShapes);
         renderPlot();
-        setStatus(`Generated ${count} candles. Drag lines wherever you like, even outside the price range.`);
+        setStatus(`Generated synthetic candles. Drag lines wherever you like, even outside the price range.`);
         setModePill("Pan / inspect");
       });
 
-      renderPlot();
-      setStatus("Loaded synthetic price data. Use the buttons above to draw, edit, or erase lines.");
+      async function loadTickerData() {
+        const ticker = tickerEl.value.trim().toUpperCase();
+        if (!ticker) return;
+        currentTicker = ticker;
+        setStatus(`Loading ${ticker} from Yahoo Finance...`);
+        try {
+          series = await fetchYahooSeries(ticker, rangeEl.value);
+          layout.xaxis.range = withDatePadding(series.dates, 3);
+          layout.yaxis.range = series.yRange;
+          storedShapes = loadShapesForTicker(currentTicker);
+          renderPlot();
+          setStatus(`Loaded ${ticker} with ${series.dates.length} candles. Stored lines restored.`);
+          setModePill("Pan / inspect");
+        } catch (err) {
+          console.error(err);
+          series = generateSeries(120);
+          layout.xaxis.range = withDatePadding(series.dates, 3);
+          layout.yaxis.range = series.yRange;
+          storedShapes = [];
+          renderPlot();
+          setStatus(`Failed to load ${ticker}: ${err.message}. Showing synthetic data instead.`);
+        }
+      }
+
+      document.getElementById("load").addEventListener("click", loadTickerData);
+
+      extendEl.addEventListener("change", () => {
+        storedShapes = storedShapes.map((s) => ({ ...s, extend: s.extend || extendEl.value }));
+        applyShapes();
+      });
+
+      // initial bootstrap
+      loadTickerData();
     </script>
   </body>
 </html>
