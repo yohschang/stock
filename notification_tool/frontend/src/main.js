@@ -212,7 +212,24 @@ function visibleRangeSeconds() {
   return {
     from: firstSec + (logicalRange.from - firstLogical) * secondsPerLogical,
     to: firstSec + (logicalRange.to - firstLogical) * secondsPerLogical,
+    secondsPerLogical,
+    logicalFrom: logicalRange.from,
+    logicalTo: logicalRange.to,
   };
+}
+
+function timeFromCoordinate(x) {
+  const direct = chart.timeScale().coordinateToTime(x);
+  if (direct !== null && direct !== undefined) {
+    return direct;
+  }
+
+  const logical = chart.timeScale().coordinateToLogical(x);
+  const visible = visibleRangeSeconds();
+  if (logical === null || !visible || visible.secondsPerLogical === 0) return null;
+
+  const seconds = visible.from + (logical - visible.logicalFrom) * visible.secondsPerLogical;
+  return seconds;
 }
 
 function paddingSeconds() {
@@ -609,7 +626,7 @@ async function applyDrag(pt) {
 }
 
 function pointFromCoords(x, y) {
-  let timeVal = chart.timeScale().coordinateToTime(x);
+  let timeVal = timeFromCoordinate(x);
   let priceVal = candleSeries.coordinateToPrice(y);
   if (priceVal === undefined || priceVal === null) {
     const priceScale = chart.priceScale("right");
