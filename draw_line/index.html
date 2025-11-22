@@ -130,6 +130,12 @@
           <option value="6mo">6 months</option>
           <option value="1y">1 year</option>
         </select>
+        <label for="interval">Interval</label>
+        <select id="interval" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
+          <option value="1d">1 day</option>
+          <option value="1wk">1 week</option>
+          <option value="1mo">1 month</option>
+        </select>
         <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
           <button id="load">Load from Yahoo Finance</button>
           <button id="fit" class="secondary">Zoom to candles</button>
@@ -167,6 +173,7 @@
       const pillEl = document.getElementById("mode-pill");
       const tickerEl = document.getElementById("ticker");
       const rangeEl = document.getElementById("range");
+      const intervalEl = document.getElementById("interval");
       const extendEl = document.getElementById("extend");
 
       function setStatus(text) {
@@ -217,6 +224,7 @@
         edits: {
           shapePosition: true,
           shapeDimensions: true,
+          shapeDelete: true,
         },
         legend: { orientation: "h" },
       };
@@ -230,13 +238,31 @@
         edits: {
           shapePosition: true,
           shapeDimensions: true,
+          shapeDelete: true,
         },
       };
 
-      async function fetchYahooSeries(ticker, range) {
+      const linePalette = [
+        "#22d3ee",
+        "#c084fc",
+        "#f472b6",
+        "#f97316",
+        "#34d399",
+        "#f59e0b",
+        "#60a5fa",
+      ];
+
+      function randomLineColor() {
+        const idx = Math.floor(Math.random() * linePalette.length);
+        return linePalette[idx];
+      }
+
+      async function fetchYahooSeries(ticker, range, interval) {
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
           ticker
-        )}?interval=1d&range=${encodeURIComponent(range)}&includePrePost=false&corsDomain=finance.yahoo.com`;
+        )}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(
+          range
+        )}&includePrePost=false&corsDomain=finance.yahoo.com`;
         const res = await fetch(url);
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status}`);
@@ -338,10 +364,11 @@
             x1: s.x1,
             y0: s.y0,
             y1: s.y1,
-            line: { color: "#22d3ee", width: 2 },
+            line: { color: s.color || layout.newshape.line.color || "#22d3ee", width: 2 },
             opacity: 0.95,
             layer: "above",
-            meta: { extend: s.extend || "none" },
+            meta: { extend: s.extend || extendEl.value },
+            extend: s.extend || extendEl.value,
           };
           return extendCoords(base, layout.xaxis.range);
         });
@@ -354,12 +381,14 @@
 
       function syncStoredShapes() {
         const shapes = chartEl.layout?.shapes || [];
-        storedShapes = shapes.map((s) => ({
+        const previousCount = storedShapes.length;
+        storedShapes = shapes.map((s, idx) => ({
           x0: s.x0,
           x1: s.x1,
           y0: s.y0,
           y1: s.y1,
           extend: s.meta?.extend || extendEl.value,
+          color: s.line?.color || (idx >= previousCount ? randomLineColor() : layout.newshape.line.color || randomLineColor()),
         }));
         saveShapesForTicker(currentTicker, storedShapes);
         updateLineCount();
@@ -405,7 +434,9 @@
       }
 
       document.getElementById("draw").addEventListener("click", () => {
-        setStatus("Drawing mode: click and drag on the chart to place a line.");
+        const color = randomLineColor();
+        setStatus(`Drawing mode: new lines will use color ${color}. Click and drag on the chart to place a line.`);
+        Plotly.relayout(chartEl, { "newshape.line.color": color });
         setDragMode("drawline", "Draw line");
       });
 
@@ -453,7 +484,7 @@
         currentTicker = ticker;
         setStatus(`Loading ${ticker} from Yahoo Finance...`);
         try {
-          series = await fetchYahooSeries(ticker, rangeEl.value);
+          series = await fetchYahooSeries(ticker, rangeEl.value, intervalEl.value);
           layout.xaxis.range = withDatePadding(series.dates, 3);
           layout.yaxis.range = series.yRange;
           storedShapes = loadShapesForTicker(currentTicker);
@@ -472,9 +503,10 @@
       }
 
       document.getElementById("load").addEventListener("click", loadTickerData);
+      intervalEl.addEventListener("change", loadTickerData);
 
       extendEl.addEventListener("change", () => {
-        storedShapes = storedShapes.map((s) => ({ ...s, extend: s.extend || extendEl.value }));
+        storedShapes = storedShapes.map((s) => ({ ...s, extend: extendEl.value }));
         applyShapes();
       });
 
