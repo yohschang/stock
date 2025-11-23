@@ -1,0 +1,254 @@
+{"msg": "Sync: layout.shapes=1, eventData=null", "timestamp": 1763865943406}
+{"msg": "Final shapes count: 1", "timestamp": 1763865943406}
+{"msg": "Sync: layout.shapes=1, eventData=null", "timestamp": 1763865943409}
+{"msg": "Final shapes count: 1", "timestamp": 1763865943409}
+{"msg": "Sync: layout.shapes=1, eventData=[\"newshape.line.color\"]", "timestamp": 1763865943409}
+{"msg": "Final shapes count: 1", "timestamp": 1763865943409}
+{"msg": "Sync: layout.shapes=1, eventData=[\"dragmode\"]", "timestamp": 1763865943410}
+{"msg": "Final shapes count: 1", "timestamp": 1763865943410}
+{"msg": "Sync: layout.shapes=2, eventData=[\"shapes\"]", "timestamp": 1763865946391}
+{"msg": "Final shapes count: 2", "timestamp": 1763865946391}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865961625}
+{"msg": "Final shapes count: 2", "timestamp": 1763865961626}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865961629}
+{"msg": "Final shapes count: 2", "timestamp": 1763865961629}
+{"msg": "Sync: layout.shapes=2, eventData=[\"newshape.line.color\"]", "timestamp": 1763865961630}
+{"msg": "Final shapes count: 2", "timestamp": 1763865961630}
+{"msg": "Sync: layout.shapes=2, eventData=[\"dragmode\"]", "timestamp": 1763865961630}
+{"msg": "Final shapes count: 2", "timestamp": 1763865961630}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973668}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973668}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973669}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973669}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973684}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973684}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973685}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973685}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973707}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973706}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973708}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973708}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973726}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973727}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973728}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973727}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973749}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973748}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973750}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973750}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973764}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973764}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973765}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973765}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973782}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973782}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973783}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973783}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973799}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973800}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973801}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973801}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973818}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973819}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973820}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973820}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973835}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973836}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973837}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973837}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973857}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973855}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973860}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973859}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973893}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973894}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973893}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973894}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973909}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973909}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973910}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973910}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973924}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973924}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973925}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973925}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973940}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973939}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973940}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973941}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973962}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973962}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973963}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973963}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973977}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973978}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973979}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973979}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973995}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865973995}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865973996}
+{"msg": "Final shapes count: 2", "timestamp": 1763865973997}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974011}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974011}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974014}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974014}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974033}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974034}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974035}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974035}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974050}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974050}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974051}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974052}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974066}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974067}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974067}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974068}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974085}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974084}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974086}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974086}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974105}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974105}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974107}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974107}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974120}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974120}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974121}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974122}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974136}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865974135}
+{"msg": "Sync: layout.shapes=2, eventData=[\"xaxis.range\"]", "timestamp": 1763865974137}
+{"msg": "Final shapes count: 2", "timestamp": 1763865974137}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865977040}
+{"msg": "Final shapes count: 2", "timestamp": 1763865977041}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763865977044}
+{"msg": "Final shapes count: 2", "timestamp": 1763865977044}
+{"msg": "Sync: layout.shapes=2, eventData=[\"dragmode\"]", "timestamp": 1763865977047}
+{"msg": "Final shapes count: 2", "timestamp": 1763865977046}
+{"msg": "Sync: layout.shapes=2, eventData=[\"newshape.line.color\"]", "timestamp": 1763865977046}
+{"msg": "Final shapes count: 2", "timestamp": 1763865977047}
+{"msg": "Sync: layout.shapes=3, eventData=[\"shapes\"]", "timestamp": 1763865980689}
+{"msg": "Final shapes count: 3", "timestamp": 1763865980689}
+{"msg": "Sync: layout.shapes=0, eventData=null", "timestamp": 1763866003725}
+{"msg": "Final shapes count: 0", "timestamp": 1763866003726}
+{"msg": "Sync: layout.shapes=0, eventData=null", "timestamp": 1763866003729}
+{"msg": "Final shapes count: 0", "timestamp": 1763866003729}
+{"msg": "Sync: layout.shapes=0, eventData=[\"newshape.line.color\"]", "timestamp": 1763866003730}
+{"msg": "Sync: layout.shapes=0, eventData=[\"dragmode\"]", "timestamp": 1763866003731}
+{"msg": "Final shapes count: 0", "timestamp": 1763866003730}
+{"msg": "Final shapes count: 0", "timestamp": 1763866003731}
+{"msg": "Sync: layout.shapes=1, eventData=[\"shapes\"]", "timestamp": 1763866007965}
+{"msg": "Final shapes count: 1", "timestamp": 1763866007965}
+{"msg": "Sync: layout.shapes=1, eventData=null", "timestamp": 1763866009601}
+{"msg": "Final shapes count: 1", "timestamp": 1763866009602}
+{"msg": "Sync: layout.shapes=1, eventData=null", "timestamp": 1763866009605}
+{"msg": "Final shapes count: 1", "timestamp": 1763866009606}
+{"msg": "Sync: layout.shapes=1, eventData=[\"newshape.line.color\"]", "timestamp": 1763866009607}
+{"msg": "Final shapes count: 1", "timestamp": 1763866009607}
+{"msg": "Sync: layout.shapes=1, eventData=[\"dragmode\"]", "timestamp": 1763866009608}
+{"msg": "Final shapes count: 1", "timestamp": 1763866009608}
+{"msg": "Sync: layout.shapes=2, eventData=[\"shapes\"]", "timestamp": 1763866013484}
+{"msg": "Final shapes count: 2", "timestamp": 1763866013484}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763866018980}
+{"msg": "Final shapes count: 2", "timestamp": 1763866018981}
+{"msg": "Sync: layout.shapes=2, eventData=[\"shapes[1].x0\",\"shapes[1].x1\",\"shapes[1].y0\",\"shapes[1].y1\"]", "timestamp": 1763866018982}
+{"msg": "Final shapes count: 2", "timestamp": 1763866018982}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763866024079}
+{"msg": "Final shapes count: 2", "timestamp": 1763866024079}
+{"msg": "Sync: layout.shapes=2, eventData=[\"shapes[0].x0\",\"shapes[0].y0\"]", "timestamp": 1763866024080}
+{"msg": "Final shapes count: 2", "timestamp": 1763866024081}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866058949}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058950}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058951}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866058950}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866058964}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058964}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058965}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866058965}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866058981}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058982}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058982}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866058982}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866058997}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058998}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866058998}
+{"msg": "Final shapes count: 3", "timestamp": 1763866058999}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059014}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059016}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059015}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059016}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059035}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059035}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059036}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059036}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059050}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059050}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059052}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059051}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059072}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059073}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059075}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059075}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059099}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059099}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059100}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059101}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059116}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059116}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059117}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059117}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059131}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059132}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059133}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059133}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059148}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059149}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059148}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059150}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059164}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059164}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059165}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059166}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059180}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059181}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059181}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059182}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059197}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059198}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059199}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059199}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059214}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059214}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059215}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059216}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059230}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059231}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059232}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059232}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059248}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059248}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059249}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059249}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059264}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059264}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059265}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059266}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059280}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059281}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059282}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059282}
+{"msg": "Sync: layout.shapes=3, eventData=null", "timestamp": 1763866059297}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059298}
+{"msg": "Sync: layout.shapes=3, eventData=[\"xaxis.range\"]", "timestamp": 1763866059299}
+{"msg": "Final shapes count: 3", "timestamp": 1763866059299}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763866064625}
+{"msg": "Final shapes count: 2", "timestamp": 1763866064625}
+{"msg": "Sync: layout.shapes=2, eventData=null", "timestamp": 1763866064628}
+{"msg": "Final shapes count: 2", "timestamp": 1763866064628}
+{"msg": "Sync: layout.shapes=2, eventData=[\"newshape.line.color\"]", "timestamp": 1763866064629}
+{"msg": "Final shapes count: 2", "timestamp": 1763866064629}
+{"msg": "Sync: layout.shapes=2, eventData=[\"dragmode\"]", "timestamp": 1763866064630}
+{"msg": "Final shapes count: 2", "timestamp": 1763866064630}
+{"msg": "Sync: layout.shapes=3, eventData=[\"shapes\"]", "timestamp": 1763866068564}
+{"msg": "Final shapes count: 3", "timestamp": 1763866068565}
