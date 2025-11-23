@@ -6,7 +6,7 @@ import yfinance as yf
 import pandas as pd
 import os
 
-PORT = 8888
+PORT = 8000
 
 class TradingToolHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -32,9 +32,17 @@ class TradingToolHandler(http.server.SimpleHTTPRequestHandler):
             
             # Fetch data
             print(f"Fetching data for {ticker}, interval={interval}, period={period}")
-            df = yf.download(ticker, interval=interval, period=period, auto_adjust=True, progress=False)
+            try:
+                df = yf.download(ticker, interval=interval, period=period, auto_adjust=True, progress=False)
+                if df.empty:
+                    print("Data empty with auto_adjust=True, retrying with auto_adjust=False...")
+                    df = yf.download(ticker, interval=interval, period=period, auto_adjust=False, progress=False)
+            except Exception as e:
+                print(f"Download failed: {e}")
+                df = pd.DataFrame()
             
             if df.empty:
+                print(f"No data found for {ticker}")
                 self.send_error(404, "No data found for ticker")
                 return
 

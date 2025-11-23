@@ -183,7 +183,7 @@
         style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;">
         <option value="1mo">1 month</option>
         <option value="3mo">3 months</option>
-        <option value="6mo">6 months</option>
+        <option value="6mo" selected>6 months</option>
         <option value="1y">1 year</option>
       </select>
       <label>Interval</label>
@@ -780,6 +780,7 @@
     }
 
     document.getElementById("load").addEventListener("click", loadTickerData);
+    rangeEl.addEventListener("change", loadTickerData);
 
     // Handle tab switching
     intervalTabs.forEach(tab => {
