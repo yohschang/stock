@@ -201,12 +201,10 @@
       </div>
       <div style="margin-top:20px;"><span class="pill" id="mode-pill">Pan / inspect</span></div>
       <p class="muted" style="margin-top:10px;">Select an action below then use the chart's toolbar handles. Drag the
-        line's endpoints to edit; use erase mode or the clear button to delete.</p>
+        line's endpoints to edit or clear all lines with one click.</p>
       <div class="toolbar">
         <button id="draw">Draw line</button>
         <button id="edit" class="secondary">Edit lines</button>
-        <button id="delete-selected" class="secondary" disabled>Delete Selected</button>
-        <button id="erase" class="secondary">Erase single line</button>
         <button id="clear" class="danger">Clear all lines</button>
       </div>
       <label for="extend">Auto-extend</label>
@@ -223,8 +221,7 @@
       <div id="chart"></div>
       <p class="muted" id="line-count" style="margin-top:10px;">0 custom lines on the canvas.</p>
       <div id="line-list" style="margin-top:16px; display:flex; flex-direction:column; gap:8px;"></div>
-      <p class="muted" style="margin-top:8px;">Lines can be drawn anywhere, even outside the candle area. Use the eraser
-        button or the trash icon in the toolbar to remove individual lines.</p>
+      <p class="muted" style="margin-top:8px;">Lines can be drawn anywhere, even outside the candle area. Use the per-line delete buttons or clear all lines at once.</p>
       <div id="debug"
         style="margin-top:20px; background:#000; color:#0f0; font-family:monospace; padding:10px; white-space:pre-wrap; max-height:200px; overflow:auto;">
       </div>
@@ -289,12 +286,15 @@
       return Number.isFinite(n) ? n : value;
     }
 
+    function normalizeExtend(value) {
+      return ["none", "forward", "backward", "both"].includes(value) ? value : "none";
+    }
+
     const storageKey = "draw_line_shapes_v1";
     let currentTicker = tickerEl.value.toUpperCase();
     let series = null;
     let storedShapes = [];
     let internalUpdate = false;
-    let selectedShapeIdx = null;
 
     const layout = {
       dragmode: "pan",
@@ -330,7 +330,7 @@
     const config = {
       responsive: true,
       displaylogo: false,
-      modeBarButtonsToAdd: ["drawline", "eraseshape"],
+      modeBarButtonsToAdd: ["drawline"],
       toImageButtonOptions: { format: "png" },
       editable: true,
       edits: {
@@ -353,6 +353,24 @@
     function randomLineColor() {
       const idx = Math.floor(Math.random() * linePalette.length);
       return linePalette[idx];
+    }
+
+    function getDataRange() {
+      if (series && Array.isArray(series.dates) && series.dates.length > 0) {
+        const times = series.dates
+          .map((d) => new Date(d).getTime())
+          .filter((t) => Number.isFinite(t));
+        if (times.length) {
+          const min = Math.min(...times);
+          const max = Math.max(...times);
+          return [new Date(min), new Date(max)];
+        }
+      }
+      if (layout.xaxis.range && layout.xaxis.range.length === 2) {
+        return layout.xaxis.range.map((d) => new Date(d));
+      }
+      const now = new Date();
+      return withDatePadding([now], 3);
     }
 
     async function fetchYahooSeries(ticker, range, interval) {
@@ -415,9 +433,11 @@
         const x1 = toISOStringSafe(s.x1);
         const y0 = toNumberSafe(s.y0);
         const y1 = toNumberSafe(s.y1);
+        const extend = normalizeExtend(s.extend || extendEl.value || "none");
         return [
           [x0, y0],
-          [x1, y1]
+          [x1, y1],
+          extend
         ];
       });
 
@@ -454,22 +474,15 @@
         // Convert back to Plotly shapes
         // [[x0, y0], [x1, y1]] -> { x0, x1, y0, y1, type: 'line', ... }
         return data[0][ticker].map(pair => {
-          const [[rawX0, rawY0], [rawX1, rawY1]] = pair;
+          const [[rawX0, rawY0], [rawX1, rawY1], rawExtend] = pair;
           return {
             x0: toDateSafe(rawX0),
             y0: toNumberSafe(rawY0),
             x1: toDateSafe(rawX1),
             y1: toNumberSafe(rawY1),
             type: 'line',
-            // Restore default or random color since we don't save it in this format
-            // The user didn't ask to save color, so we lose it.
-            // We'll assign a random one or default if not present.
-            // Actually, better to keep consistent color if possible, but the format is strict.
-            // We will just use a default color or random.
-            // Wait, if we reload, we want them to look nice.
-            // I'll use a fixed color for restored lines or random.
             color: randomLineColor(),
-            extend: extendEl.value,
+            extend: normalizeExtend(rawExtend || extendEl.value),
           };
         });
       } catch (e) {
@@ -478,13 +491,19 @@
       }
     }
 
-    function extendCoords(shape, range) {
+    function extendCoords(shape) {
       const extend = shape.extend || "none";
       if (extend === "none") return shape;
-      const [xStart, xEnd] = range.map((d) => new Date(d).getTime());
+      const range = getDataRange();
+      const [xStartRaw, xEndRaw] = range;
+      const xStart = new Date(xStartRaw).getTime();
+      const xEnd = new Date(xEndRaw).getTime();
       const x0 = new Date(shape.x0).getTime();
       const x1 = new Date(shape.x1).getTime();
-      const slope = (shape.y1 - shape.y0) / (x1 - x0 || 1);
+      if (!Number.isFinite(x0) || !Number.isFinite(x1) || x0 === x1) {
+        return shape; // keep vertical or invalid as-is
+      }
+      const slope = (shape.y1 - shape.y0) / (x1 - x0);
       const forward = () => ({
         x1: new Date(xEnd),
         y1: shape.y0 + slope * (xEnd - x0),
@@ -507,8 +526,7 @@
     }
 
     function applyShapes() {
-      const extended = storedShapes.map((s, idx) => {
-        const isSelected = idx === selectedShapeIdx;
+      const extended = storedShapes.map((s) => {
         const base = {
           type: "line",
           x0: s.x0,
@@ -516,16 +534,16 @@
           y0: s.y0,
           y1: s.y1,
           line: {
-            color: isSelected ? "#ffffff" : (s.color || layout.newshape.line.color || "#22d3ee"),
-            width: isSelected ? 4 : 2,
-            dash: isSelected ? "dot" : "solid"
+            color: s.color || layout.newshape.line.color || "#22d3ee",
+            width: 2,
+            dash: "solid"
           },
           opacity: 0.95,
           layer: "above",
           meta: { extend: s.extend || extendEl.value },
           extend: s.extend || extendEl.value,
         };
-        return extendCoords(base, layout.xaxis.range);
+        return extendCoords(base);
       });
       internalUpdate = true;
       Plotly.relayout(chartEl, { shapes: extended }).then(() => {
@@ -587,7 +605,7 @@
         x1: toDateSafe(s.x1),
         y0: toNumberSafe(s.y0),
         y1: toNumberSafe(s.y1),
-        extend: s.meta?.extend || extendEl.value,
+        extend: normalizeExtend(s.meta?.extend || s.extend || extendEl.value),
         color: s.line?.color || (idx >= previousCount ? randomLineColor() : storedShapes[idx]?.color || randomLineColor()),
       }));
       saveShapesForTicker(currentTicker, storedShapes);
@@ -620,92 +638,6 @@
         applyShapes();
 
         // Add click listener for selection
-        chartEl.on('plotly_click', (data) => {
-          if (!data || !data.points) return;
-          // We can't easily detect click on shape via points, so we use coordinate distance
-          // But plotly_click event gives us the clicked coordinates
-          const clickX = new Date(data.points[0].xaxis.d2c(data.event.offsetX - layout.margin.l)).getTime(); // Approximate
-          // Better: use the event coordinates and map to data
-          // Actually, data.points[0].x is the x-value of the point clicked (candle).
-          // We need the exact mouse position.
-
-          const xaxis = chartEl._fullLayout.xaxis;
-          const yaxis = chartEl._fullLayout.yaxis;
-          const xClick = xaxis.p2d(data.event.x - layout.margin.l);
-          const yClick = yaxis.p2d(data.event.y - layout.margin.t);
-
-          // Find closest shape
-          let closestIdx = -1;
-          let minDist = Infinity;
-
-          // Convert xClick to timestamp if it's a date string
-          const xClickTs = new Date(xClick).getTime();
-
-          storedShapes.forEach((s, idx) => {
-            const x0 = new Date(s.x0).getTime();
-            const x1 = new Date(s.x1).getTime();
-            const y0 = s.y0;
-            const y1 = s.y1;
-
-            // Distance from point to line segment
-            // Normalize x and y to screen pixels for fair distance? 
-            // Or just use data units? Data units are mixed (time vs price).
-            // Better to project everything to pixels.
-
-            const x0px = xaxis.d2p(s.x0);
-            const x1px = xaxis.d2p(s.x1);
-            const y0px = yaxis.d2p(s.y0);
-            const y1px = yaxis.d2p(s.y1);
-            const clickXpx = xaxis.d2p(xClick);
-            const clickYpx = yaxis.d2p(yClick);
-
-            // Point to line segment distance in pixels
-            const A = clickXpx - x0px;
-            const B = clickYpx - y0px;
-            const C = x1px - x0px;
-            const D = y1px - y0px;
-
-            const dot = A * C + B * D;
-            const lenSq = C * C + D * D;
-            let param = -1;
-            if (lenSq !== 0) param = dot / lenSq;
-
-            let xx, yy;
-
-            if (param < 0) {
-              xx = x0px;
-              yy = y0px;
-            } else if (param > 1) {
-              xx = x1px;
-              yy = y1px;
-            } else {
-              xx = x0px + param * C;
-              yy = y0px + param * D;
-            }
-
-            const dx = clickXpx - xx;
-            const dy = clickYpx - yy;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < 10) { // 10px threshold
-              if (dist < minDist) {
-                minDist = dist;
-                closestIdx = idx;
-              }
-            }
-          });
-
-          if (closestIdx !== -1) {
-            selectedShapeIdx = closestIdx;
-            document.getElementById('delete-selected').disabled = false;
-            setStatus(`Selected line ${closestIdx + 1}.`);
-          } else {
-            selectedShapeIdx = null;
-            document.getElementById('delete-selected').disabled = true;
-            setStatus("Deselected lines.");
-          }
-          applyShapes();
-        });
       });
     }
 
@@ -724,6 +656,21 @@
         const d2 = new Date(s.x1).toLocaleDateString();
         info.textContent = `Line ${idx + 1}: ${d1} → ${d2}`;
 
+        const extendSelect = document.createElement("select");
+        extendSelect.style.cssText = "margin-left:auto; margin-right:12px; padding:4px 8px; border-radius:6px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;";
+        ["none", "forward", "backward", "both"].forEach(val => {
+          const opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = val === "none" ? "No extend" : `Extend ${val}`;
+          if (s.extend === val) opt.selected = true;
+          extendSelect.appendChild(opt);
+        });
+        extendSelect.onchange = () => {
+          storedShapes[idx].extend = extendSelect.value;
+          saveShapesForTicker(currentTicker, storedShapes);
+          applyShapes();
+        };
+
         const delBtn = document.createElement("button");
         delBtn.textContent = "Delete";
         delBtn.className = "danger";
@@ -736,6 +683,7 @@
         };
 
         item.appendChild(info);
+        item.appendChild(extendSelect);
         item.appendChild(delBtn);
         listEl.appendChild(item);
       });
@@ -764,31 +712,12 @@
       setDragMode("pan", "Edit lines");
     });
 
-    document.getElementById("erase").addEventListener("click", () => {
-      setStatus("Eraser mode: click any line to remove it.");
-      setDragMode("eraseshape", "Erase line");
-    });
-
     document.getElementById("clear").addEventListener("click", () => {
       storedShapes = [];
-      selectedShapeIdx = null;
-      document.getElementById('delete-selected').disabled = true;
       saveShapesForTicker(currentTicker, storedShapes);
       Plotly.relayout(chartEl, { shapes: [] }).then(() => updateLineCount());
       setStatus("All lines cleared.");
       setDragMode("pan", "Pan / inspect");
-    });
-
-    document.getElementById("delete-selected").addEventListener("click", () => {
-      if (selectedShapeIdx !== null && storedShapes[selectedShapeIdx]) {
-        storedShapes.splice(selectedShapeIdx, 1);
-        selectedShapeIdx = null;
-        document.getElementById('delete-selected').disabled = true;
-        saveShapesForTicker(currentTicker, storedShapes);
-        applyShapes();
-        updateLineCount();
-        setStatus("Selected line deleted.");
-      }
     });
 
     document.getElementById("fit").addEventListener("click", () => {
@@ -869,8 +798,7 @@
     });
 
     extendEl.addEventListener("change", () => {
-      storedShapes = storedShapes.map((s) => ({ ...s, extend: extendEl.value }));
-      applyShapes();
+      setStatus(`Default extend for new lines: ${extendEl.value}`);
     });
 
     // initial bootstrap
