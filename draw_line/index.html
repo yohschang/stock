@@ -295,6 +295,7 @@
     let series = null;
     let storedShapes = [];
     let internalUpdate = false;
+    let selectedShapeIdx = null;
 
     const layout = {
       dragmode: "pan",
@@ -483,6 +484,7 @@
             type: 'line',
             color: randomLineColor(),
             extend: normalizeExtend(rawExtend || extendEl.value),
+            saved: true,
           };
         });
       } catch (e) {
@@ -526,7 +528,8 @@
     }
 
     function applyShapes() {
-      const extended = storedShapes.map((s) => {
+      const extended = storedShapes.map((s, idx) => {
+        const isSelected = idx === selectedShapeIdx;
         const base = {
           type: "line",
           x0: s.x0,
@@ -534,9 +537,9 @@
           y0: s.y0,
           y1: s.y1,
           line: {
-            color: s.color || layout.newshape.line.color || "#22d3ee",
-            width: 2,
-            dash: "solid"
+            color: isSelected ? "#ffffff" : (s.color || layout.newshape.line.color || "#22d3ee"),
+            width: isSelected ? 4 : 2,
+            dash: isSelected ? "dot" : "solid"
           },
           opacity: 0.95,
           layer: "above",
@@ -599,17 +602,31 @@
 
       logToDebug(`Final shapes count: ${shapes.length}`);
 
-      const previousCount = storedShapes.length;
-      storedShapes = shapes.map((s, idx) => ({
-        x0: toDateSafe(s.x0),
-        x1: toDateSafe(s.x1),
-        y0: toNumberSafe(s.y0),
-        y1: toNumberSafe(s.y1),
-        extend: normalizeExtend(s.meta?.extend || s.extend || extendEl.value),
-        color: s.line?.color || (idx >= previousCount ? randomLineColor() : storedShapes[idx]?.color || randomLineColor()),
-      }));
-      saveShapesForTicker(currentTicker, storedShapes);
+      const previousShapes = storedShapes;
+      const previousCount = previousShapes.length;
+      storedShapes = shapes.map((s, idx) => {
+        const x0 = toDateSafe(s.x0);
+        const x1 = toDateSafe(s.x1);
+        const y0 = toNumberSafe(s.y0);
+        const y1 = toNumberSafe(s.y1);
+        const extend = normalizeExtend(s.meta?.extend || s.extend || extendEl.value);
+        const color = s.line?.color || (idx >= previousCount ? randomLineColor() : previousShapes[idx]?.color || randomLineColor());
+        const prev = previousShapes[idx];
+        const unchanged = prev
+          && new Date(prev.x0).getTime() === new Date(x0).getTime()
+          && new Date(prev.x1).getTime() === new Date(x1).getTime()
+          && prev.y0 === y0
+          && prev.y1 === y1
+          && prev.extend === extend;
+        const saved = prev ? (prev.saved && unchanged) : false;
+        return { x0, x1, y0, y1, extend, color, saved };
+      });
       updateLineCount();
+    }
+
+    function persistSavedShapes() {
+      const savedShapes = storedShapes.filter(s => s.saved);
+      saveShapesForTicker(currentTicker, savedShapes);
     }
 
     function renderPlot() {
@@ -647,7 +664,20 @@
 
       storedShapes.forEach((s, idx) => {
         const item = document.createElement("div");
-        item.style.cssText = "display:flex; align-items:center; justify-content:space-between; background:#0f172a; padding:8px 12px; border-radius:6px; border:1px solid #1f2a44;";
+        const isSelected = idx === selectedShapeIdx;
+        item.style.cssText = `
+          display:flex; align-items:center; gap:8px;
+          background:${isSelected ? "#14203a" : "#0f172a"};
+          padding:8px 12px; border-radius:6px;
+          border:1px solid ${isSelected ? "#22d3ee" : "#1f2a44"};
+          cursor:pointer;
+        `;
+        item.onclick = () => {
+          selectedShapeIdx = isSelected ? null : idx;
+          applyShapes();
+          renderLineList();
+          setStatus(selectedShapeIdx === null ? "Deselected line." : `Selected line ${idx + 1}.`);
+        };
 
         const info = document.createElement("span");
         info.style.fontSize = "13px";
@@ -657,7 +687,7 @@
         info.textContent = `Line ${idx + 1}: ${d1} → ${d2}`;
 
         const extendSelect = document.createElement("select");
-        extendSelect.style.cssText = "margin-left:auto; margin-right:12px; padding:4px 8px; border-radius:6px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;";
+        extendSelect.style.cssText = "margin-left:auto; padding:4px 8px; border-radius:6px; border:1px solid #1f2a44; background:#0b1428; color:#e6edf3;";
         ["none", "forward", "backward", "both"].forEach(val => {
           const opt = document.createElement("option");
           opt.value = val;
@@ -665,25 +695,43 @@
           if (s.extend === val) opt.selected = true;
           extendSelect.appendChild(opt);
         });
-        extendSelect.onchange = () => {
+        extendSelect.onclick = (e) => e.stopPropagation();
+        extendSelect.onchange = (e) => {
+          e.stopPropagation();
           storedShapes[idx].extend = extendSelect.value;
-          saveShapesForTicker(currentTicker, storedShapes);
+          storedShapes[idx].saved = false;
           applyShapes();
+          renderLineList();
+        };
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = s.saved ? "Saved" : "Save";
+        saveBtn.className = "secondary";
+        saveBtn.style.cssText = "padding:4px 10px; font-size:12px;";
+        saveBtn.disabled = !!s.saved;
+        saveBtn.onclick = (e) => {
+          e.stopPropagation();
+          storedShapes[idx].saved = true;
+          persistSavedShapes();
+          renderLineList();
+          setStatus(`Line ${idx + 1} saved.`);
         };
 
         const delBtn = document.createElement("button");
         delBtn.textContent = "Delete";
         delBtn.className = "danger";
         delBtn.style.cssText = "padding:4px 8px; font-size:12px; margin-left:12px;";
-        delBtn.onclick = () => {
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
           storedShapes.splice(idx, 1);
-          saveShapesForTicker(currentTicker, storedShapes);
+          persistSavedShapes();
           applyShapes();
           renderLineList();
         };
 
         item.appendChild(info);
         item.appendChild(extendSelect);
+        item.appendChild(saveBtn);
         item.appendChild(delBtn);
         listEl.appendChild(item);
       });
