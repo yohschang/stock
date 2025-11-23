@@ -13,8 +13,73 @@ class TradingToolHandler(http.server.SimpleHTTPRequestHandler):
         parsed_path = urllib.parse.urlparse(self.path)
         if parsed_path.path == '/api/data':
             self.handle_data_request(parsed_path.query)
+        elif parsed_path.path == '/api/lines':
+            self.handle_lines_get()
         else:
             super().do_GET()
+
+    def do_POST(self):
+        parsed_path = urllib.parse.urlparse(self.path)
+        if parsed_path.path == '/api/lines':
+            self.handle_lines_post()
+        elif parsed_path.path == '/debug_log':
+            self.handle_debug_log()
+        else:
+            self.send_error(404, "Endpoint not found")
+
+    def handle_lines_get(self):
+        try:
+            if os.path.exists('lines.json'):
+                with open('lines.json', 'r') as f:
+                    data = f.read()
+            else:
+                data = '[{}]' # Default empty structure
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(data.encode('utf-8'))
+        except Exception as e:
+            self.send_error(500, str(e))
+
+    def handle_lines_post(self):
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            lines_data = json.loads(post_data)
+            
+            # Validate or just save. The user wants a specific format, but we trust the frontend to send it right for now.
+            # We could validate it's a list containing a dict.
+            
+            with open('lines.json', 'w') as f:
+                json.dump(lines_data, f, indent=2)
+                
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(b'{"status": "ok"}')
+        except Exception as e:
+            print(f"Error saving lines: {e}")
+            self.send_error(500, str(e))
+
+    def handle_debug_log(self):
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            log_entry = json.loads(post_data)
+            
+            with open('debug_log.txt', 'a') as f:
+                f.write(json.dumps(log_entry) + '\n')
+            
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(b'{"status": "logged"}')
+        except Exception as e:
+            print(f"Error logging debug: {e}")
+            self.send_error(500, str(e))
 
     def handle_data_request(self, query_string):
         params = urllib.parse.parse_qs(query_string)
@@ -88,5 +153,6 @@ class TradingToolHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, str(e))
 
 print(f"Serving at http://localhost:{PORT}")
-with socketserver.TCPServer(("", PORT), TradingToolHandler) as httpd:
+print(f"Serving at http://localhost:{PORT}")
+with socketserver.ThreadingTCPServer(("", PORT), TradingToolHandler) as httpd:
     httpd.serve_forever()

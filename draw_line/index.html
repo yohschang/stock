@@ -225,6 +225,9 @@
       <div id="line-list" style="margin-top:16px; display:flex; flex-direction:column; gap:8px;"></div>
       <p class="muted" style="margin-top:8px;">Lines can be drawn anywhere, even outside the candle area. Use the eraser
         button or the trash icon in the toolbar to remove individual lines.</p>
+      <div id="debug"
+        style="margin-top:20px; background:#000; color:#0f0; font-family:monospace; padding:10px; white-space:pre-wrap; max-height:200px; overflow:auto;">
+      </div>
     </section>
   </main>
   <script>
@@ -390,15 +393,64 @@
       return { dates, o, h, l, c, yRange: [yMin, yMax] };
     }
 
-    function saveShapesForTicker(ticker, shapes) {
-      const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      payload[ticker] = shapes;
-      localStorage.setItem(storageKey, JSON.stringify(payload));
+    async function saveShapesForTicker(ticker, shapes) {
+      // Convert shapes to requested format: [[x0, y0], [x1, y1]]
+      const formattedShapes = shapes.map(s => [
+        [s.x0, s.y0],
+        [s.x1, s.y1]
+      ]);
+
+      try {
+        // Fetch current lines first to merge
+        const res = await fetch('/api/lines');
+        let data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          data = [{}];
+        }
+
+        // Update ticker data
+        data[0][ticker] = formattedShapes;
+
+        // Save back
+        await fetch('/api/lines', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } catch (e) {
+        console.error("Failed to save lines:", e);
+      }
     }
 
-    function loadShapesForTicker(ticker) {
-      const payload = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      return payload[ticker] || [];
+    async function loadShapesForTicker(ticker) {
+      try {
+        const res = await fetch('/api/lines');
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0 || !data[0][ticker]) {
+          return [];
+        }
+
+        // Convert back to Plotly shapes
+        // [[x0, y0], [x1, y1]] -> { x0, x1, y0, y1, type: 'line', ... }
+        return data[0][ticker].map(pair => ({
+          x0: pair[0][0],
+          y0: pair[0][1],
+          x1: pair[1][0],
+          y1: pair[1][1],
+          type: 'line',
+          // Restore default or random color since we don't save it in this format
+          // The user didn't ask to save color, so we lose it. 
+          // We'll assign a random one or default if not present.
+          // Actually, better to keep consistent color if possible, but the format is strict.
+          // We will just use a default color or random.
+          // Wait, if we reload, we want them to look nice.
+          // I'll use a fixed color for restored lines or random.
+          color: randomLineColor()
+        }));
+      } catch (e) {
+        console.error("Failed to load lines:", e);
+        return [];
+      }
     }
 
     function extendCoords(shape, range) {
@@ -457,8 +509,53 @@
       });
     }
 
-    function syncStoredShapes() {
-      const shapes = chartEl.layout?.shapes || [];
+    const debugEl = document.getElementById("debug");
+    function logToDebug(msg) {
+      if (debugEl) {
+        debugEl.textContent += msg + "\n";
+        debugEl.scrollTop = debugEl.scrollHeight;
+      }
+      // Send to server
+      fetch('/debug_log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ msg: msg, timestamp: Date.now() })
+      }).catch(e => console.error("Failed to send log", e));
+    }
+
+    function syncStoredShapes(eventData) {
+      let shapes = chartEl.layout?.shapes || chartEl._fullLayout?.shapes || [];
+
+      logToDebug(`Sync: layout.shapes=${shapes ? shapes.length : 'null'}, eventData=${eventData ? JSON.stringify(Object.keys(eventData)) : 'null'}`);
+
+      // Fallback: if shapes is empty but eventData has shapes, try to use eventData
+      if ((!shapes || shapes.length === 0) && eventData) {
+        if (eventData.shapes && Array.isArray(eventData.shapes)) {
+          shapes = eventData.shapes;
+          logToDebug("Fallback: used full array from eventData");
+        } else {
+          // Check for new shape object like "shapes[0]": {...}
+          const shapeKeys = Object.keys(eventData).filter(k => k.match(/^shapes\[\d+\]$/));
+          if (shapeKeys.length > 0) {
+            logToDebug(`Fallback: found partial keys: ${JSON.stringify(shapeKeys)}`);
+            const tempShapes = [];
+            shapeKeys.forEach(k => {
+              const match = k.match(/shapes\[(\d+)\]$/);
+              if (match) {
+                const idx = parseInt(match[1]);
+                tempShapes[idx] = eventData[k];
+              }
+            });
+            if (tempShapes.length > 0) {
+              shapes = tempShapes.filter(s => s);
+              logToDebug(`Fallback: reconstructed ${shapes.length} shapes`);
+            }
+          }
+        }
+      }
+
+      logToDebug(`Final shapes count: ${shapes.length}`);
+
       const previousCount = storedShapes.length;
       storedShapes = shapes.map((s, idx) => ({
         x0: s.x0,
@@ -466,7 +563,7 @@
         y0: s.y0,
         y1: s.y1,
         extend: s.meta?.extend || extendEl.value,
-        color: s.line?.color || (idx >= previousCount ? randomLineColor() : layout.newshape.line.color || randomLineColor()),
+        color: s.line?.color || (idx >= previousCount ? randomLineColor() : storedShapes[idx]?.color || randomLineColor()),
       }));
       saveShapesForTicker(currentTicker, storedShapes);
       updateLineCount();
@@ -485,67 +582,16 @@
         name: currentTicker,
       };
       Plotly.newPlot(chartEl, [candle], layout, config).then(() => {
-        if (!chartEl._lineListenerAttached) {
-          chartEl.on("plotly_relayout", (eventData) => {
-            if (internalUpdate) return;
+        chartEl.on("plotly_relayout", (eventData) => {
+          if (internalUpdate) return;
+          // Pass eventData to syncStoredShapes
+          syncStoredShapes(eventData);
+        });
 
-            // Check if a shape was added or modified
-            const shapeKeys = Object.keys(eventData).filter(k => k.includes("shapes"));
-            if (shapeKeys.length > 0) {
-              // We need to find which shape was changed or added.
-              // Since Plotly doesn't give us the index easily in all cases, we can just re-read all shapes
-              // and snap them if they are new or moved.
-              // However, to avoid snapping everything repeatedly, we can just snap the current layout shapes.
-
-              const currentShapes = chartEl.layout.shapes || [];
-
-              // If a new shape is drawn, it might not be in storedShapes yet.
-              // If an existing shape is moved, we update it.
-
-              const newStoredShapes = currentShapes.map((s, idx) => {
-                // Find nearest dates for x0 and x1
-                // Note: s.x0 and s.x1 might be date strings or timestamps
-
-                // Only snap if we have series data
-                let x0 = s.x0;
-                let x1 = s.x1;
-
-                if (series && series.dates) {
-                  // Find closest date in series.dates
-                  // We need to convert s.x0/s.x1 to date objects if they aren't
-                  const d0 = new Date(x0);
-                  const d1 = new Date(x1);
-
-                  // Snap
-                  const snap0 = findNearestDate(d0, series.dates);
-                  const snap1 = findNearestDate(d1, series.dates);
-
-                  x0 = snap0.toISOString(); // Store as ISO string for consistency
-                  x1 = snap1.toISOString();
-                }
-
-                return {
-                  x0: x0,
-                  x1: x1,
-                  y0: s.y0,
-                  y1: s.y1,
-                  extend: s.meta?.extend || extendEl.value,
-                  color: s.line?.color || (idx >= storedShapes.length ? randomLineColor() : storedShapes[idx].color || randomLineColor()),
-                };
-              });
-
-              storedShapes = newStoredShapes;
-              saveShapesForTicker(currentTicker, storedShapes);
-
-              // Re-apply shapes to force them to snap position visually
-              // We need to do this in a way that doesn't cause an infinite loop
-              // applyShapes() sets internalUpdate = true, so it should be safe.
-              applyShapes();
-            }
-            updateLineCount();
-          });
-          chartEl._lineListenerAttached = true;
-        }
+        chartEl.on("plotly_afterplot", () => {
+          if (internalUpdate) return;
+          syncStoredShapes();
+        });
         applyShapes();
 
         // Add click listener for selection
@@ -764,7 +810,7 @@
         }
 
         layout.yaxis.range = series.yRange;
-        storedShapes = loadShapesForTicker(currentTicker);
+        storedShapes = await loadShapesForTicker(currentTicker);
         renderPlot();
         setStatus(`Loaded ${ticker} with ${series.dates.length} candles. Stored lines restored.`);
         setModePill("Pan / inspect");
